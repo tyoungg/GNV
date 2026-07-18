@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import folium
 import random
+import os
 from folium.plugins import MarkerCluster, HeatMap
 from streamlit_folium import st_folium
 
@@ -34,7 +35,10 @@ st.markdown('<div class="subtitle">An interactive guide to the local calendars a
 # --- Data Loading ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/venues.csv")
+    # Resolve the path relative to the current file to support running from any directory
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(base_dir, "data", "venues.csv")
+    df = pd.read_csv(csv_path)
     # Clean up empty or corrupted values
     df = df.dropna(subset=["lat", "lon", "name"])
     return df
@@ -46,8 +50,6 @@ except Exception as e:
     st.stop()
 
 # --- Feature Enhancements & Mock Data Generation ---
-# To deliver a rich user experience (as mentioned in Steps 5, 6, and 7 of the user requirements),
-# we generate stable mock events for our venues.
 @st.cache_data
 def generate_mock_events(venue_names):
     random.seed(42)  # For consistent results
@@ -80,6 +82,10 @@ def generate_mock_events(venue_names):
     return events
 
 mock_events = generate_mock_events(df["name"].unique())
+
+# --- Initialize Session State for Active Venue (st_folium hook integration) ---
+if "selected_venue" not in st.session_state:
+    st.session_state["selected_venue"] = sorted(df["name"].unique())[0]
 
 # --- Sidebar Controls ---
 st.sidebar.header("Filter & Settings")
@@ -135,7 +141,6 @@ if near_me_enabled:
     ]
 
 # Filter based on Time Horizon matching the mock events
-# (A venue matches if it has at least one event in the specified timeframe)
 if time_filter != "All":
     matching_venues = []
     for name in filtered["name"]:
@@ -159,8 +164,6 @@ with col3:
     st.metric("Active Categories", len(filtered["category"].unique()) if len(filtered) > 0 else 0)
 
 # --- Build Folium Map ---
-# Icons, Emojis and Colors mapping (AwesomeMarkers or Leaflet styling)
-# Beautiful markers map with fallback to standard icon sets
 colors_mapping = {
     "Music": "blue",
     "Arts": "purple",
@@ -217,7 +220,6 @@ if map_view_type == "Standard Pin Cluster":
         # Directions link to Google Maps
         directions_url = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
 
-        # Create a beautiful HTML popup card
         popup_html = f"""
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; min-width: 200px;">
             <h4 style="margin: 0 0 5px 0; color: #1E3A8A;">{emoji} {name}</h4>
@@ -245,12 +247,21 @@ else:
     if heat_data:
         HeatMap(heat_data, radius=25, blur=15).add_to(m)
 
-# Render map in Streamlit
+# Render map in Streamlit and capture interactive st_folium return hook
 map_data = st_folium(
     m,
     use_container_width=True,
-    height=550
+    height=550,
+    key="gainesville_map"
 )
+
+# --- Bidirectional Streamlit Event Hook / Click Handler ---
+# When a marker is clicked on standard map view, update the session_state selected_venue!
+if map_data and map_data.get("last_object_clicked_tooltip"):
+    clicked_venue = map_data["last_object_clicked_tooltip"]
+    # Check if clicked venue exists in current filter set
+    if clicked_venue in filtered["name"].values:
+        st.session_state["selected_venue"] = clicked_venue
 
 # --- Click Interaction / Venue Details Sidebar ---
 st.markdown("---")
@@ -259,11 +270,23 @@ st.subheader("🗓️ Venue Details & Events List")
 if len(filtered) == 0:
     st.warning("No venues found matching the current filters.")
 else:
-    # Allow selecting a venue to explore its mock/simulated upcoming schedule
+    # Ensure current state venue is valid with current filters, else fallback
+    venue_list = sorted(filtered["name"].unique())
+    current_selected = st.session_state["selected_venue"]
+    if current_selected not in venue_list:
+        current_selected = venue_list[0]
+        st.session_state["selected_venue"] = current_selected
+
+    # Interactive dropdown to manually change venue or view updated state hook selection
+    selected_venue_idx = venue_list.index(current_selected)
+
     selected_venue_name = st.selectbox(
         "Select a venue to inspect its upcoming events:",
-        sorted(filtered["name"].unique())
+        venue_list,
+        index=selected_venue_idx
     )
+    # Save manually updated option back to state
+    st.session_state["selected_venue"] = selected_venue_name
 
     venue_data = filtered[filtered["name"] == selected_venue_name].iloc[0]
     st.markdown(f"### {emojis_mapping.get(venue_data['category'], '📍')} {venue_data['name']}")
