@@ -74,6 +74,7 @@ except Exception as e:
 # Converting the parameter to a standard Python tuple or loading it inside avoids caching issues.
 @st.cache_data
 def generate_mock_events(venue_names_tuple):
+    import datetime
     random.seed(42)  # For consistent results
     categories_pool = ["Music", "Theater", "Family", "Outdoor", "Food & Drink", "Community"]
     events = {}
@@ -91,11 +92,46 @@ def generate_mock_events(venue_names_tuple):
                 timeframe = "Next 7 Days"
 
             tag = random.choice(categories_pool)
+
+            # Generate a specific date based on days_away (relative to a base date like Saturday, July 18, 2026 for realism)
+            base_date = datetime.date(2026, 7, 18)
+            event_date = (base_date + datetime.timedelta(days=days_away)).strftime("%A, %B %d, %Y")
+
+            # Generate a time range
+            start_hour = random.choice([8, 9, 10, 11, 12, 1, 2, 4, 6, 7, 8])
+            start_min = random.choice(["00", "30"])
+            meridiem = "AM" if start_hour in [8, 9, 10, 11] or start_hour == 12 else "PM"
+
+            end_hour = (start_hour + random.choice([1, 2, 3])) % 12
+            if end_hour == 0:
+                end_hour = 12
+            end_min = random.choice(["00", "30"])
+            end_meridiem = "PM" if start_hour in [12, 1, 2, 4, 6, 7, 8] or (start_hour in [8, 9, 10, 11] and (start_hour + 3) >= 12) else "AM"
+
+            time_range = f"{start_hour}:{start_min} {meridiem} – {end_hour}:{end_min} {end_meridiem}"
+
+            cost = random.choice(["FREE", "FREE", "$5", "$10", "FREE"])
+
+            # Specific titles per tag
+            titles = {
+                "Music": ["Acoustic Evening Concert", "Live Local Bands Showcase", "Jazz under the Stars", "Indie Rock Showcase"],
+                "Theater": ["Comedy Night Live", "Shakespeare in the Park", "Improv Workshop", "Broadway Classics Concert"],
+                "Family": ["Open Gym & Family Play", "Kids Storytime & Crafts", "Family Fun Festival", "Science Saturday Exploration"],
+                "Outdoor": ["Guided Nature Walk", "Community Morning Yoga", "Sunset Bicycle Tour", "Farmer's Market & Crafts"],
+                "Food & Drink": ["Trivia & Craft Beer Night", "Local Food Truck Rally", "Wine & Cheese Tasting", "Home Brewing Masterclass"],
+                "Community": ["Town Hall Forum", "Community Volunteer Cleanup", "Local Artisan Fair", "Gainesville Tech Meetup"]
+            }
+            title_pool = titles.get(tag, ["Exciting Gathering"])
+            title = f"{random.choice(title_pool)}"
+
             venue_events.append({
-                "title": f"Exciting {tag} Gathering {i+1}",
-                "tag": tag,
+                "title": title,
+                "tag": tag.upper(),
                 "timeframe": timeframe,
                 "days_away": days_away,
+                "date_str": event_date,
+                "time_range": time_range,
+                "cost": cost,
                 "description": f"Join us at {name} for this incredible {tag.lower()} experience!"
             })
         # Sort by days away
@@ -236,6 +272,8 @@ if map_view_type == "Standard Pin Cluster":
         url = row["website"]
         lat = row["lat"]
         lon = row["lon"]
+        desc = row.get("description", "") if "description" in row else ""
+        date_added = row.get("date_added", "2026-07-14") if "date_added" in row else "2026-07-14"
 
         events = mock_events.get(name, [])
         emoji = emojis_mapping.get(cat, "📍")
@@ -243,10 +281,15 @@ if map_view_type == "Standard Pin Cluster":
         # Directions link to Google Maps
         directions_url = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
 
+        desc_html = f'<p style="font-size: 0.85rem; color: #4B5563; margin: 8px 0 4px 0;"><i>{desc}</i></p>' if desc and str(desc) != "nan" else ""
+        date_html = f'<p style="font-size: 0.8rem; color: #6B7280; margin: 4px 0 10px 0;"><b>Discovered on:</b> {date_added}</p>' if date_added and str(date_added) != "nan" else ""
+
         popup_html = f"""
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; min-width: 200px;">
             <h4 style="margin: 0 0 5px 0; color: #1E3A8A;">{emoji} {name}</h4>
             <span style="background-color: #F3F4F6; color: #374151; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">{cat} Venue</span>
+            {desc_html}
+            {date_html}
             <p style="font-size: 0.9rem; margin: 10px 0;"><b>Upcoming events:</b> {len(events)}</p>
             <div style="margin-top: 10px;">
                 <a href="{url}" target="_blank" style="background-color: #2563EB; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; margin-right: 5px;">Website</a>
@@ -318,6 +361,8 @@ else:
     with col1:
         st.markdown(f"**Category:** {venue_data['category']}")
         st.markdown(f"**Website:** [Visit Official Website]({venue_data['website']})")
+        if "date_added" in venue_data and str(venue_data["date_added"]) != "nan":
+            st.markdown(f"📅 **Added to map:** {venue_data['date_added']}")
         directions_link = f"https://www.google.com/maps/dir/?api=1&destination={venue_data['lat']},{venue_data['lon']}"
         st.markdown(f"🚗 [Get Google Maps Directions]({directions_link})")
 
@@ -337,12 +382,11 @@ else:
                     continue
 
                 st.markdown(f"""
-                <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 10px; margin-bottom: 10px; border-radius: 0 4px 4px 0;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="font-weight: bold; color: #1F2937;">{ev['title']}</span>
-                        <span style="background-color: #E0E7FF; color: #4338CA; padding: 2px 6px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500;">{ev['timeframe']}</span>
-                    </div>
-                    <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #4B5563;">{ev['description']}</p>
-                    <span style="font-size: 0.75rem; color: #9CA3AF;">Tag: {ev['tag']}</span>
+                <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
+                    <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
+                    <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {selected_venue_name}</div>
+                    <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
+                    <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
+                    <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">{selected_venue_name}</div>
                 </div>
                 """, unsafe_allow_html=True)
