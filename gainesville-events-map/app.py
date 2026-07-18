@@ -35,7 +35,7 @@ st.markdown('<div class="subtitle">An interactive guide to the local calendars a
 # --- Data Loading ---
 @st.cache_data
 def load_data():
-    # Resolve the path relative to the current file to support running from any directory
+    # Resolve the path relative to the current file (supporting running from either root or project directory)
     base_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(base_dir, "data", "venues.csv")
     df = pd.read_csv(csv_path)
