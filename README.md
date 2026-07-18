@@ -20,23 +20,26 @@ Please find the complete self-contained Streamlit project inside the [gainesvill
 ## 📂 Project Structure
 
 ```
-gainesville-events-map/
+.
+├── streamlit_app.py         # Root entrypoint for Streamlit Cloud deployment
+├── requirements.txt         # Root requirements for Streamlit Cloud
 │
-├── app.py                   # Main interactive Streamlit application
-├── requirements.txt         # Core dependencies
-│
-├── .streamlit/
-│   └── config.toml          # Custom theme configuration
-│
-├── data/
-│   └── venues.csv           # Cached geocoded venues
-│
-├── utils/
-│   ├── geocode.py           # Geocoding module with predefined fallbacks & cache
-│   ├── scraper.py           # Web scraper for the live Gainesville Events Sources page
-│   └── run_pipeline.py      # Main script to run the update data pipeline
-│
-└── README.md                # Project documentation
+└── gainesville-events-map/
+    ├── app.py               # Main interactive Streamlit application
+    ├── requirements.txt     # Core dependencies
+    │
+    ├── .streamlit/
+    │   └── config.toml      # Custom theme configuration
+    │
+    ├── data/
+    │   └── venues.csv       # Cached geocoded venues
+    │
+    ├── utils/
+    │   ├── geocode.py       # Geocoding module with predefined fallbacks & cache
+    │   ├── scraper.py       # Web scraper for the live Gainesville Events Sources page
+    │   └── run_pipeline.py  # Main script to run the update data pipeline
+    │
+    └── README.md            # Project documentation
 ```
 
 ---
@@ -47,7 +50,7 @@ gainesville-events-map/
 Make sure you have Python 3.10+ installed. Install the required Python packages:
 
 ```bash
-pip install -r gainesville-events-map/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 2. Run the Ingestion Pipeline (Optional)
@@ -58,7 +61,13 @@ python3 gainesville-events-map/utils/run_pipeline.py
 ```
 
 ### 3. Start the Streamlit App
-Launch the web application locally:
+Launch the web application locally from the root of the repository:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Or from the project directory:
 
 ```bash
 streamlit run gainesville-events-map/app.py
@@ -88,7 +97,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install -r gainesville-events-map/requirements.txt
+          pip install -r requirements.txt
       - name: Run Pipeline
         run: |
           python gainesville-events-map/utils/run_pipeline.py
