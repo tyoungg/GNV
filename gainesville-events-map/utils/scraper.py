@@ -2,6 +2,70 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+def normalize_name(name: str) -> str:
+    """
+    Normalizes venue names to consolidate duplicates, strip out common suffixes/phrases,
+    and ensure a clean, standardized format.
+    """
+    # Clean up excess spaces first
+    name = re.sub(r'\s+', ' ', name).strip()
+    name_lower = name.lower()
+
+    # 1. Check exact/keyword matches for known venues to prevent over-stripping
+    overrides = {
+        "gainesville events facebook page": "Gainesville Events",
+        "gainesville community events and activities": "Gainesville Community Events",
+        "gainesville community events": "Gainesville Community Events",
+        "gainesville events directory": "City of Gainesville",
+        "gainesville events": "Gainesville Events",
+        "alachua county meetings & events": "Alachua County Meetings & Events",
+        "visit gainesville festivals & special events": "Visit Gainesville",
+        "visit gainesville events": "Visit Gainesville",
+        "visit gainesville": "Visit Gainesville",
+        "things to do gainesville group": "Things To Do Gainesville",
+        "things to do gainesville": "Things To Do Gainesville",
+        "greater gainesville chamber community events": "Greater Gainesville Chamber",
+        "greater gainesville chamber": "Greater Gainesville Chamber",
+        "celebration pointe events": "Celebration Pointe",
+        "celebration pointe": "Celebration Pointe",
+        "depot park events calendar": "Depot Park",
+        "depot park": "Depot Park",
+        "high dive": "High Dive",
+        "heartwood": "Heartwood Soundstage",
+    }
+
+    for key, val in overrides.items():
+        if key in name_lower:
+            return val
+
+    # 2. General suffix removal for other/new venues
+    # Remove any parenthetical comments first (e.g., "(alt URL)")
+    name = re.sub(r'\s*\(.*?\)', '', name)
+
+    suffixes = [
+        " Festivals & Special Events",
+        " Events Calendar",
+        " Events Directory",
+        " Community Update",
+        " Facebook Page",
+        " Facebook Group",
+        " Directory",
+        " Calendar",
+        " Events",
+        " Event",
+        " Group",
+    ]
+
+    # Sort suffixes by length descending to match longest first
+    for suffix in sorted(suffixes, key=len, reverse=True):
+        if name.lower().endswith(suffix.lower()):
+            name = name[:-len(suffix)]
+
+    # Clean up trailing punctuation or leftover characters (e.g., &, -, :, comma)
+    name = re.sub(r'[\s\-\&,:\.]+$', '', name).strip()
+    return re.sub(r'\s+', ' ', name).strip()
+
+
 def scrape_sources():
     """
     Scrapes the Gainesville Events Sources page to retrieve venue listings,
@@ -62,6 +126,9 @@ def scrape_sources():
 
         # Clean up names (remove trailing characters or clean whitespaces)
         name = re.sub(r'\s+', ' ', name).strip()
+
+        # Normalize names to consolidate duplicate/varied entries
+        name = normalize_name(name)
 
         # Determine category based on name keywords
         category = "Other"

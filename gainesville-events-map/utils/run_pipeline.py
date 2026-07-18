@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from scraper import scrape_sources
+from scraper import scrape_sources, normalize_name
 from geocode import geocode_venue
 
 def run_ingestion_pipeline():
@@ -19,10 +19,11 @@ def run_ingestion_pipeline():
         print("No existing venue CSV found. Starting fresh.")
         df_existing = pd.DataFrame(columns=["name", "category", "lat", "lon", "website"])
 
-    # Convert existing names to lower for easy comparison
+    # Convert existing names to lower for easy comparison after normalizing them
     existing_lookup = {}
     for _, row in df_existing.iterrows():
-        existing_lookup[row["name"].lower().strip()] = {
+        norm_name = normalize_name(str(row["name"]))
+        existing_lookup[norm_name.lower().strip()] = {
             "category": row["category"],
             "lat": row["lat"],
             "lon": row["lon"],
