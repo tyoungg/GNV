@@ -35,9 +35,28 @@ st.markdown('<div class="subtitle">An interactive guide to the local calendars a
 # --- Data Loading ---
 @st.cache_data
 def load_data():
-    # Resolve the path relative to the current file (supporting running from either root or project directory)
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(base_dir, "data", "venues.csv")
+    # Multi-path fallbacks to guarantee venues.csv is found regardless of wrapper/environment setup
+    possible_paths = [
+        # Relative to current file's directory (direct execution)
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "venues.csv"),
+        # Relative to current file's directory with subdirectory (wrapped execution on Streamlit Cloud)
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "gainesville-events-map", "data", "venues.csv"),
+        # Working directory with subfolder
+        "gainesville-events-map/data/venues.csv",
+        # Working directory direct
+        "data/venues.csv",
+    ]
+
+    csv_path = None
+    for p in possible_paths:
+        if os.path.exists(p):
+            csv_path = p
+            break
+
+    if not csv_path:
+        # Fallback to display the tried paths if none was found
+        raise FileNotFoundError(f"Could not locate venues.csv. Tried paths: {possible_paths}")
+
     df = pd.read_csv(csv_path)
     # Clean up empty or corrupted values
     df = df.dropna(subset=["lat", "lon", "name"])
