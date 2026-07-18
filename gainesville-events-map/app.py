@@ -69,13 +69,16 @@ except Exception as e:
     st.stop()
 
 # --- Feature Enhancements & Mock Data Generation ---
+# Note: Streamlit's @st.cache_data tries to hash input parameters.
+# Passing a NumPy array (like df["name"].unique()) can throw UnhashableParamError in some Streamlit environments.
+# Converting the parameter to a standard Python tuple or loading it inside avoids caching issues.
 @st.cache_data
-def generate_mock_events(venue_names):
+def generate_mock_events(venue_names_tuple):
     random.seed(42)  # For consistent results
     categories_pool = ["Music", "Theater", "Family", "Outdoor", "Food & Drink", "Community"]
     events = {}
 
-    for name in venue_names:
+    for name in venue_names_tuple:
         num_events = random.randint(1, 15)
         venue_events = []
         for i in range(num_events):
@@ -100,7 +103,8 @@ def generate_mock_events(venue_names):
         events[name] = venue_events
     return events
 
-mock_events = generate_mock_events(df["name"].unique())
+# Ensure we pass a standard Python tuple of strings, which is fully hashable by Streamlit
+mock_events = generate_mock_events(tuple(df["name"].unique()))
 
 # --- Initialize Session State for Active Venue (st_folium hook integration) ---
 if "selected_venue" not in st.session_state:
