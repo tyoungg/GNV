@@ -1,0 +1,57 @@
+name: Nightly Venues Refresh
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # Runs nightly at 4:00 AM UTC (12:00 AM EST)
+  workflow_dispatch: # Allows manual trigger from Actions tab
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh-venues:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Ingestion Pipeline
+        run: |
+          python gainesville-events-map/utils/run_pipeline.py
+
+      - name: Check for changes and create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "$(git status --porcelain gainesville-events-map/data/venues.csv)" ]; then
+            echo "Changes detected in venues.csv. Preparing to open a Pull Request..."
+
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+            BRANCH_NAME="auto-update-venues-$(date +%Y%m%d-%H%M%S)"
+            git checkout -b "$BRANCH_NAME"
+            git add gainesville-events-map/data/venues.csv
+            git commit -m "chore: auto-update venues cache"
+            git push origin "$BRANCH_NAME"
+
+            gh pr create \
+              --title "chore: auto-update venues cache" \
+              --body "An automated nightly run has detected new or updated event sources on GainesvilleEvents.com. This Pull Request updates the local cache file \`gainesville-events-map/data/venues.csv\`." \
+              --head "$BRANCH_NAME"
+          else
+            echo "No changes detected in venues.csv. Everything is up-to-date."
+          fi
