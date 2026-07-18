@@ -282,17 +282,28 @@ if map_view_type == "Standard Pin Cluster":
         directions_url = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
 
         desc_html = f'<p style="font-size: 0.85rem; color: #4B5563; margin: 8px 0 4px 0;"><i>{desc}</i></p>' if desc and str(desc) != "nan" else ""
-        date_html = f'<p style="font-size: 0.8rem; color: #6B7280; margin: 4px 0 10px 0;"><b>Discovered on:</b> {date_added}</p>' if date_added and str(date_added) != "nan" else ""
+
+        first_event_html = ""
+        if events:
+            ev = events[0]
+            first_event_html = f"""
+            <div style="border-top: 1px solid #E5E7EB; margin-top: 10px; padding-top: 10px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.4;">
+                <div style="font-weight: bold; font-size: 0.95rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
+                <div style="color: #4B5563; font-size: 0.85rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {name}</div>
+                <div style="color: #4B5563; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
+                <div style="color: #059669; font-weight: bold; font-size: 0.75rem; margin-bottom: 2px;">{ev['cost']}</div>
+                <div style="color: #2563EB; font-size: 0.8rem; font-weight: 500;">{name}</div>
+            </div>
+            """
 
         popup_html = f"""
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; min-width: 200px;">
             <h4 style="margin: 0 0 5px 0; color: #1E3A8A;">{emoji} {name}</h4>
             <span style="background-color: #F3F4F6; color: #374151; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">{cat} Venue</span>
             {desc_html}
-            {date_html}
-            <p style="font-size: 0.9rem; margin: 10px 0;"><b>Upcoming events:</b> {len(events)}</p>
-            <div style="margin-top: 10px;">
-                <a href="{url}" target="_blank" style="background-color: #2563EB; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; margin-right: 5px;">Website</a>
+            {first_event_html}
+            <div style="margin-top: 12px; border-top: 1px solid #E5E7EB; padding-top: 8px; display: flex; gap: 6px;">
+                <a href="{url}" target="_blank" style="background-color: #2563EB; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Website</a>
                 <a href="{directions_url}" target="_blank" style="background-color: #059669; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Directions</a>
             </div>
         </div>
