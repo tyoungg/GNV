@@ -73,29 +73,36 @@ except Exception as e:
 # Passing a NumPy array (like df["name"].unique()) can throw UnhashableParamError in some Streamlit environments.
 # Converting the parameter to a standard Python tuple or loading it inside avoids caching issues.
 @st.cache_data
-def generate_mock_events(venue_names_tuple):
+def generate_mock_events(venue_names_tuple, today_str):
     import datetime
     random.seed(42)  # For consistent results
     categories_pool = ["Music", "Theater", "Family", "Outdoor", "Food & Drink", "Community"]
     events = {}
+
+    base_date = datetime.date.fromisoformat(today_str)
+    today_weekday = base_date.weekday()  # Monday=0, Sunday=6
 
     for name in venue_names_tuple:
         num_events = random.randint(1, 15)
         venue_events = []
         for i in range(num_events):
             days_away = random.randint(0, 10)
+
+            # Generate a specific date based on days_away relative to actual dynamic base_date
+            event_date = base_date + datetime.timedelta(days=days_away)
+            event_date_str = event_date.strftime("%A, %B %d, %Y")
+
+            # Categorize timeframe dynamically and correctly
             if days_away == 0:
                 timeframe = "Today"
-            elif days_away <= 2:
+            elif event_date.weekday() in [4, 5, 6] and days_away <= (6 - today_weekday):
                 timeframe = "This Weekend"
-            else:
+            elif days_away <= 7:
                 timeframe = "Next 7 Days"
+            else:
+                timeframe = "Later"
 
             tag = random.choice(categories_pool)
-
-            # Generate a specific date based on days_away (relative to a base date like Saturday, July 18, 2026 for realism)
-            base_date = datetime.date(2026, 7, 18)
-            event_date = (base_date + datetime.timedelta(days=days_away)).strftime("%A, %B %d, %Y")
 
             # Generate a time range
             start_hour = random.choice([8, 9, 10, 11, 12, 1, 2, 4, 6, 7, 8])
@@ -129,7 +136,7 @@ def generate_mock_events(venue_names_tuple):
                 "tag": tag.upper(),
                 "timeframe": timeframe,
                 "days_away": days_away,
-                "date_str": event_date,
+                "date_str": event_date_str,
                 "time_range": time_range,
                 "cost": cost,
                 "description": f"Join us at {name} for this incredible {tag.lower()} experience!"
@@ -140,7 +147,9 @@ def generate_mock_events(venue_names_tuple):
     return events
 
 # Ensure we pass a standard Python tuple of strings, which is fully hashable by Streamlit
-mock_events = generate_mock_events(tuple(df["name"].unique()))
+import datetime
+today_str = datetime.date.today().isoformat()
+mock_events = generate_mock_events(tuple(df["name"].unique()), today_str)
 
 # --- Initialize Session State for Active Venue (st_folium hook integration) ---
 if "selected_venue" not in st.session_state:
@@ -160,10 +169,10 @@ selected_categories = st.sidebar.multiselect(
     default=categories
 )
 
-# 3. Time Slider (Today, This Weekend, Next 7 Days)
+# 3. Time Slider (All, Next 7 Days, This Weekend, Today)
 time_filter = st.sidebar.select_slider(
     "📅 Event Time Horizon",
-    options=["All", "Today", "This Weekend", "Next 7 Days"]
+    options=["All", "Next 7 Days", "This Weekend", "Today"]
 )
 
 # 4. Map View Toggle (Marker Cluster vs Heatmap)
