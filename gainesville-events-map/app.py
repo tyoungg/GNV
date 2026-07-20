@@ -77,85 +77,99 @@ PHYSICAL_VENUES = {
         "address": "811 S Main St, Gainesville, FL 32601",
         "lat": 29.6443,
         "lon": -82.3168,
-        "website": "https://cademuseum.org/"
+        "website": "https://cademuseum.org/",
+        "category": "Museum"
     },
     "Florida Museum of Natural History": {
         "address": "3215 Hull Rd, Gainesville, FL 32611",
         "lat": 29.6381,
         "lon": -82.3692,
-        "website": "https://www.floridamuseum.ufl.edu/"
+        "website": "https://www.floridamuseum.ufl.edu/",
+        "category": "Museum"
     },
     "Harn Museum of Art": {
         "address": "3259 Hull Rd, Gainesville, FL 32611",
         "lat": 29.6370,
         "lon": -82.3698,
-        "website": "https://harn.ufl.edu/"
+        "website": "https://harn.ufl.edu/",
+        "category": "Museum"
     },
     "UF Performing Arts": {
         "address": "3201 Hull Rd, Gainesville, FL 32611",
         "lat": 29.6365,
         "lon": -82.3693,
-        "website": "https://performingarts.ufl.edu/"
+        "website": "https://performingarts.ufl.edu/",
+        "category": "Arts"
     },
     "Depot Park": {
         "address": "874 SE 4th St, Gainesville, FL 32601",
         "lat": 29.6438,
         "lon": -82.3217,
-        "website": "https://www.depotpark.org/"
+        "website": "https://www.depotpark.org/",
+        "category": "Park"
     },
     "Heartwood Soundstage": {
         "address": "619 S Main St, Gainesville, FL 32601",
         "lat": 29.6450,
         "lon": -82.3240,
-        "website": "https://www.heartwoodsoundstage.com/"
+        "website": "https://www.heartwoodsoundstage.com/",
+        "category": "Music"
     },
     "Hippodrome Theatre": {
         "address": "25 SE 2nd Pl, Gainesville, FL 32601",
         "lat": 29.6513,
         "lon": -82.3244,
-        "website": "https://thehipp.org/"
+        "website": "https://thehipp.org/",
+        "category": "Arts"
     },
     "High Dive": {
         "address": "210 SW 2nd Ave, Gainesville, FL 32601",
         "lat": 29.6521,
         "lon": -82.3243,
-        "website": "https://highdivegville.com/"
+        "website": "https://highdivegville.com/",
+        "category": "Music"
     },
     "Celebration Pointe": {
         "address": "4949 Celebration Pointe Ave, Gainesville, FL 32608",
         "lat": 29.6263,
         "lon": -82.4363,
-        "website": "https://www.celebrationpointe.com/"
+        "website": "https://www.celebrationpointe.com/",
+        "category": "Other"
     },
     "Santa Fe College": {
         "address": "3000 NW 83rd St, Gainesville, FL 32606",
         "lat": 29.6806,
         "lon": -82.4385,
-        "website": "https://www.sfcollege.edu/"
+        "website": "https://www.sfcollege.edu/",
+        "category": "University"
     },
     "Alachua County Library District": {
         "address": "401 E University Ave, Gainesville, FL 32601",
         "lat": 29.6515,
         "lon": -82.3244,
-        "website": "https://www.aclib.us/"
+        "website": "https://www.aclib.us/",
+        "category": "Library"
     },
     "Bo Diddley Plaza": {
         "address": "111 E University Ave, Gainesville, FL 32601",
         "lat": 29.6515,
         "lon": -82.3248,
-        "website": "https://www.bodiddleyplaza.com/"
+        "website": "https://www.bodiddleyplaza.com/",
+        "category": "Park"
     },
     "First Magnitude Brewing Company": {
         "address": "1220 SE Veitch St, Gainesville, FL 32601",
         "lat": 29.6402,
         "lon": -82.3238,
-        "website": "https://fmbrew.com/"
+        "website": "https://fmbrew.com/",
+        "category": "Brewery"
     },
     "Cypress & Grove Brewing Co.": {
         "address": "512 NW 4th St, Gainesville, FL 32601",
         "lat": 29.6558,
         "lon": -82.3292,
-        "website": "https://cypressandgrove.com/"
+        "website": "https://cypressandgrove.com/",
+        "category": "Brewery"
     }
 }
 
@@ -283,15 +297,11 @@ import datetime
 today_str = datetime.date.today().isoformat()
 mock_events = generate_mock_events(tuple(df["name"].unique()), today_str)
 
-# --- Initialize Session State for Active Venue (st_folium hook integration) ---
-if "selected_venue" not in st.session_state:
-    st.session_state["selected_venue"] = sorted(df["name"].unique())[0]
-
 # --- Sidebar Controls ---
 st.sidebar.header("Filter & Settings")
 
-# 1. Search Bar (Search by venue name)
-search_query = st.sidebar.text_input("🔍 Search Venue Name", "")
+# 1. Search Bar (Search by venue name or event title)
+search_query = st.sidebar.text_input("🔍 Search (Venue/Event)", "")
 
 # 2. Category Selection
 categories = sorted(df["category"].dropna().unique())
@@ -326,40 +336,94 @@ if near_me_enabled:
     st.sidebar.info("🎯 Simulating location near Heartwood Soundstage (South Downtown Gainesville). Only venues within ~2.5 miles are highlighted in the list!")
 
 # --- Filter Logic ---
-# Filter by categories first
-filtered = df[df.category.isin(selected_categories)]
+# Gather all mock events across all sources and filter them dynamically
+active_events = []
+for source_name, events in mock_events.items():
+    source_row = df[df["name"] == source_name]
+    source_category = source_row.iloc[0]["category"] if not source_row.empty else "Other"
 
-# Filter by Search Query
-if search_query:
-    filtered = filtered[filtered["name"].str.contains(search_query, case=False)]
+    for ev in events:
+        phys_venue_name = ev["event_venue"]
+        phys_venue_info = PHYSICAL_VENUES.get(phys_venue_name, {})
+        phys_venue_cat = phys_venue_info.get("category", "Other")
 
-# Filter based on "Near Me" proximity (rough distance calculation)
-if near_me_enabled:
-    # 0.036 degrees is roughly 2.5 miles
-    filtered = filtered[
-        ((filtered["lat"] - user_lat)**2 + (filtered["lon"] - user_lon)**2)**0.5 <= 0.036
-    ]
+        # 1. Category Filter
+        if phys_venue_cat not in selected_categories:
+            continue
 
-# Filter based on Time Horizon matching the mock events
-if time_filter != "All":
-    matching_venues = []
-    for name in filtered["name"]:
-        events = mock_events.get(name, [])
-        if time_filter == "Today" and any(e["timeframe"] == "Today" for e in events):
-            matching_venues.append(name)
-        elif time_filter == "This Weekend" and any(e["timeframe"] in ["Today", "This Weekend"] for e in events):
-            matching_venues.append(name)
-        elif time_filter == "Next 7 Days" and any(e["timeframe"] in ["Today", "This Weekend", "Next 7 Days"] for e in events):
-            matching_venues.append(name)
-    filtered = filtered[filtered["name"].isin(matching_venues)]
+        # 2. Search Query Filter
+        if search_query:
+            query = search_query.lower()
+            match_venue = query in phys_venue_name.lower()
+            match_title = query in ev["title"].lower()
+            match_source = query in source_name.lower()
+            if not (match_venue or match_title or match_source):
+                continue
+
+        # 3. Time Filter
+        if time_filter != "All":
+            if time_filter == "Today" and ev["timeframe"] != "Today":
+                continue
+            elif time_filter == "This Weekend" and ev["timeframe"] not in ["Today", "This Weekend"]:
+                continue
+            elif time_filter == "Next 7 Days" and ev["timeframe"] not in ["Today", "This Weekend", "Next 7 Days"]:
+                continue
+
+        # 4. Near Me Filter
+        if near_me_enabled:
+            # 0.036 degrees is roughly 2.5 miles
+            dist = ((ev["event_lat"] - user_lat)**2 + (ev["event_lon"] - user_lon)**2)**0.5
+            if dist > 0.036:
+                continue
+
+        # If we got here, the event is active!
+        ev_copy = ev.copy()
+        ev_copy["source_name"] = source_name
+        active_events.append(ev_copy)
+
+# Sort all active events chronologically by days_away
+active_events.sort(key=lambda x: x["days_away"])
+
+# Group active events by their physical hosting venue
+events_by_physical_venue = {}
+for ev in active_events:
+    venue_name = ev["event_venue"]
+    if venue_name not in events_by_physical_venue:
+        events_by_physical_venue[venue_name] = []
+    events_by_physical_venue[venue_name].append(ev)
+
+# Create a summary of active physical venues for metrics and drop-downs
+active_venues_data = []
+for name, v_events in events_by_physical_venue.items():
+    v_info = PHYSICAL_VENUES.get(name, {
+        "address": "Gainesville, FL",
+        "lat": 29.6516,
+        "lon": -82.3248,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Other"
+    })
+    active_venues_data.append({
+        "name": name,
+        "category": v_info["category"],
+        "lat": v_info["lat"],
+        "lon": v_info["lon"],
+        "website": v_info["website"],
+        "address": v_info["address"],
+        "description": f"Physical hosting venue located at {v_info['address']}."
+    })
+filtered = pd.DataFrame(active_venues_data) if active_venues_data else pd.DataFrame(columns=["name", "category", "lat", "lon", "website", "address", "description"])
+
+# --- Initialize Session State for Active Venue (st_folium hook integration) ---
+if "selected_venue" not in st.session_state:
+    active_physical_venue_names = sorted(list(events_by_physical_venue.keys())) if events_by_physical_venue else sorted(list(PHYSICAL_VENUES.keys()))
+    st.session_state["selected_venue"] = active_physical_venue_names[0]
 
 # --- Metrics section ---
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Total Venues Selected", len(filtered))
 with col2:
-    total_events = sum(len(mock_events.get(name, [])) for name in filtered["name"])
-    st.metric("Total Match Events Found", total_events)
+    st.metric("Total Match Events Found", len(active_events))
 with col3:
     st.metric("Active Categories", len(filtered["category"].unique()) if len(filtered) > 0 else 0)
 
@@ -413,41 +477,43 @@ if map_view_type == "Standard Pin Cluster":
         url = row["website"]
         lat = row["lat"]
         lon = row["lon"]
-        desc = row.get("description", "") if "description" in row else ""
-        date_added = row.get("date_added", "2026-07-14") if "date_added" in row else "2026-07-14"
+        desc = row.get("description", "")
+        address = row.get("address", "")
 
-        events = mock_events.get(name, [])
+        v_events = events_by_physical_venue.get(name, [])
         emoji = emojis_mapping.get(cat, "📍")
 
         # Directions link to Google Maps
         directions_url = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
 
-        desc_html = f'<p style="font-size: 0.85rem; color: #4B5563; margin: 8px 0 4px 0;"><i>{desc}</i></p>' if desc and str(desc) != "nan" else ""
+        desc_html = f'<p style="font-size: 0.85rem; color: #4B5563; margin: 8px 0 4px 0;"><i>{desc}</i></p>'
 
-        first_event_html = ""
-        if events:
-            ev = events[0]
-            # Provide GPS directions to the actual physical venue of the event, NOT the online source portal
-            directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
-            first_event_html = f"""
-            <div style="border-top: 1px solid #E5E7EB; margin-top: 10px; padding-top: 10px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.4;">
-                <div style="font-weight: bold; font-size: 0.95rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
-                <div style="color: #4B5563; font-size: 0.85rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
-                <div style="color: #4B5563; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
-                <div style="color: #059669; font-weight: bold; font-size: 0.75rem; margin-bottom: 2px;">{ev['cost']}</div>
-                <div style="color: #2563EB; font-size: 0.8rem; font-weight: 500;">Source: {name}</div>
-            </div>
-            """
+        events_html = ""
+        if v_events:
+            events_html += '<div style="border-top: 1px solid #E5E7EB; margin-top: 10px; padding-top: 10px; font-family: \'Helvetica Neue\', Arial, sans-serif; line-height: 1.4; max-height: 180px; overflow-y: auto;">'
+            events_html += f'<div style="font-weight: bold; font-size: 0.9rem; color: #374151; margin-bottom: 6px;">Upcoming Events ({len(v_events)}):</div>'
+            for ev in v_events[:3]:
+                events_html += f"""
+                <div style="margin-bottom: 8px; border-bottom: 1px dashed #F3F4F6; padding-bottom: 6px;">
+                    <div style="font-weight: bold; font-size: 0.85rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
+                    <div style="color: #4B5563; font-size: 0.8rem; margin-bottom: 2px;">{ev['date_str']}, {ev['time_range']}</div>
+                    <div style="color: #4B5563; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <span style="color: #059669;">{ev['cost']}</span></div>
+                    <div style="color: #2563EB; font-size: 0.75rem;">Source: {ev['source_name']}</div>
+                </div>
+                """
+            if len(v_events) > 3:
+                events_html += f'<div style="font-size: 0.75rem; color: #6B7280; text-align: center;">+ {len(v_events) - 3} more events (see below)</div>'
+            events_html += '</div>'
 
         popup_html = f"""
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; min-width: 200px;">
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; min-width: 220px;">
             <h4 style="margin: 0 0 5px 0; color: #1E3A8A;">{emoji} {name}</h4>
             <span style="background-color: #F3F4F6; color: #374151; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">{cat} Venue</span>
             {desc_html}
-            {first_event_html}
+            {events_html}
             <div style="margin-top: 12px; border-top: 1px solid #E5E7EB; padding-top: 8px; display: flex; gap: 6px;">
                 <a href="{url}" target="_blank" style="background-color: #2563EB; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Website</a>
-                <a href="{directions_url}" target="_blank" style="background-color: #059669; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Directions to Event</a>
+                <a href="{directions_url}" target="_blank" style="background-color: #059669; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Directions</a>
             </div>
         </div>
         """
@@ -463,7 +529,11 @@ if map_view_type == "Standard Pin Cluster":
         ).add_to(cluster)
 else:
     # Heatmap mode
-    heat_data = [[row["lat"], row["lon"], 1.0] for _, row in filtered.iterrows()]
+    heat_data = []
+    for _, row in filtered.iterrows():
+        name = row["name"]
+        v_events = events_by_physical_venue.get(name, [])
+        heat_data.append([row["lat"], row["lon"], float(len(v_events))])
     if heat_data:
         HeatMap(heat_data, radius=25, blur=15).add_to(m)
 
@@ -488,40 +558,17 @@ st.markdown("---")
 st.subheader("🗓️ Venue Explorer & Full Schedule")
 
 if len(filtered) == 0:
-    st.warning("No venues found matching the current filters.")
+    st.warning("No physical venues found matching the current filters.")
 else:
-    # 2. Add Tabbed interface
+    # Tabbed interface
     tab1, tab2 = st.tabs(["📅 Full Schedule (All Selected Venues)", "📍 Individual Venue Explorer"])
 
-    # Collect and filter all events from all selected venues
-    all_selected_events = []
-    for _, row in filtered.iterrows():
-        v_name = row["name"]
-        events = mock_events.get(v_name, [])
-        for ev in events:
-            # Filter events based on time slide filter
-            if time_filter == "Today" and ev["timeframe"] != "Today":
-                continue
-            if time_filter == "This Weekend" and ev["timeframe"] not in ["Today", "This Weekend"]:
-                continue
-            if time_filter == "Next 7 Days" and ev["timeframe"] not in ["Today", "This Weekend", "Next 7 Days"]:
-                continue
-
-            all_selected_events.append({
-                **ev,
-                "venue_name": v_name,
-                "category": row["category"]
-            })
-
-    # Sort all events chronologically
-    all_selected_events.sort(key=lambda x: x["days_away"])
-
     with tab1:
-        st.markdown(f"**Showing all {len(all_selected_events)} events across all {len(filtered)} selected venues matching the \"{time_filter}\" horizon.**")
-        if not all_selected_events:
+        st.markdown(f"**Showing all {len(active_events)} events across all {len(filtered)} active physical venues matching the \"{time_filter}\" horizon.**")
+        if not active_events:
             st.info("No events scheduled across any of the selected venues in this time horizon.")
         else:
-            for ev in all_selected_events:
+            for ev in active_events:
                 ev_directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
                 st.markdown(f"""
                 <div style="background-color: #F9FAFB; border-left: 4px solid #1E3A8A; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
@@ -529,13 +576,13 @@ else:
                     <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
                     <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <a href="{ev_directions_url}" target="_blank" style="color: #059669; text-decoration: none;">🚗 Directions to Event Venue</a></div>
                     <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
-                    <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">Calendar Source: {ev['venue_name']}</div>
+                    <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">Calendar Source: {ev['source_name']}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
     with tab2:
         # Ensure current state venue is valid with current filters, else fallback
-        venue_list = sorted(filtered["name"].unique())
+        venue_list = sorted(filtered["name"].unique()) if not filtered.empty else sorted(list(PHYSICAL_VENUES.keys()))
         current_selected = st.session_state["selected_venue"]
         if current_selected not in venue_list:
             current_selected = venue_list[0]
@@ -553,32 +600,39 @@ else:
         # Save manually updated option back to state
         st.session_state["selected_venue"] = selected_venue_name
 
-        venue_data = filtered[filtered["name"] == selected_venue_name].iloc[0]
-        st.markdown(f"### {emojis_mapping.get(venue_data['category'], '📍')} {venue_data['name']}")
+        venue_data = filtered[filtered["name"] == selected_venue_name].iloc[0] if not filtered.empty and selected_venue_name in filtered["name"].values else None
+        if venue_data is not None:
+            st.markdown(f"### {emojis_mapping.get(venue_data['category'], '📍')} {venue_data['name']}")
 
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown(f"**Category:** {venue_data['category']}")
-            st.markdown(f"**Website:** [Visit Official Website]({venue_data['website']})")
-            if "date_added" in venue_data and str(venue_data["date_added"]) != "nan":
-                st.markdown(f"📅 **Added to map:** {venue_data['date_added']}")
-            directions_link = f"https://www.google.com/maps/dir/?api=1&destination={venue_data['lat']},{venue_data['lon']}"
-            st.markdown(f"🚗 [Get Google Maps Directions to Source Headquarters]({directions_link})")
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.markdown(f"**Category:** {venue_data['category']}")
+                st.markdown(f"**Website:** [Visit Official Website]({venue_data['website']})")
+                st.markdown(f"📍 **Address:** {venue_data['address']}")
+                directions_link = f"https://www.google.com/maps/dir/?api=1&destination={venue_data['lat']},{venue_data['lon']}"
+                st.markdown(f"🚗 [Get Google Maps Directions]({directions_link})")
 
-        with col2:
-            st.markdown("**Upcoming Events Schedule:**")
-            venue_events = [e for e in all_selected_events if e["venue_name"] == selected_venue_name]
-            if not venue_events:
-                st.write("No events scheduled for this venue in the selected time horizon.")
-            else:
-                for ev in venue_events:
-                    ev_directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
-                    st.markdown(f"""
-                    <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
-                        <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
-                        <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
-                        <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <a href="{ev_directions_url}" target="_blank" style="color: #3B82F6; text-decoration: none;">🚗 Directions to Event Venue</a></div>
-                        <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
-                        <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">Calendar Source: {selected_venue_name}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with col2:
+                st.markdown("**Upcoming Events Schedule:**")
+                venue_events = events_by_physical_venue.get(selected_venue_name, [])
+                if not venue_events:
+                    st.write("No events scheduled for this venue in the selected time horizon.")
+                else:
+                    for ev in venue_events:
+                        ev_directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
+                        st.markdown(f"""
+                        <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
+                            <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
+                            <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
+                            <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <a href="{ev_directions_url}" target="_blank" style="color: #3B82F6; text-decoration: none;">🚗 Directions to Event Venue</a></div>
+                            <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
+                            <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">Calendar Source: {ev['source_name']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+        else:
+            st.info("No active matching events found at this venue, but here are the static details:")
+            v_info = PHYSICAL_VENUES.get(selected_venue_name, {})
+            st.markdown(f"### {emojis_mapping.get(v_info.get('category', 'Other'), '📍')} {selected_venue_name}")
+            st.markdown(f"**Category:** {v_info.get('category', 'Other')}")
+            st.markdown(f"**Website:** [Visit Official Website]({v_info.get('website', '#')})")
+            st.markdown(f"📍 **Address:** {v_info.get('address', 'Gainesville, FL')}")
