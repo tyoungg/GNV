@@ -37,8 +37,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🗺️ Gainesville Event Sources Map</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">An interactive guide to the local calendars and venues feeding GainesvilleEvents.com. Pinpoint event sources, explore categories, view upcoming events, and find directions!</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🗺️ Gainesville Events & Venues Map</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">An interactive guide mapping upcoming events to their actual physical locations across Gainesville. Aggregated from over 30+ local calendar sources on <a href="https://gainesvilleevents.com/sources/" target="_blank">GainesvilleEvents.com/sources</a>. View upcoming events, filter by categories, and find direct navigation!</div>', unsafe_allow_html=True)
 
 # --- Data Loading ---
 @st.cache_data

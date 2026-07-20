@@ -1,6 +1,8 @@
-# 🗺️ Gainesville Events Map
+# 🗺️ Gainesville Events & Venues Map
 
-A self-contained interactive Streamlit application that scrapes, geocodes, and maps local calendar sources feeding [GainesvilleEvents.com](https://gainesvilleevents.com/sources/). It serves as an intuitive portal for discovering where events originate in Gainesville and Alachua County.
+An interactive Streamlit application that scrapes, geocodes, and dynamically maps over **30+ local calendar sources** feeding [GainesvilleEvents.com/sources](https://gainesvilleevents.com/sources/).
+
+Rather than plotting general website or administrative headquarters on the map, this application **groups, schedules, and maps all upcoming events to their precise, actual physical hosting locations** across Gainesville and Alachua County!
 
 Please find the complete self-contained Streamlit project inside the [gainesville-events-map/](./gainesville-events-map/) directory.
 
@@ -8,12 +10,16 @@ Please find the complete self-contained Streamlit project inside the [gainesvill
 
 ## 🚀 Features
 
+- **Interactive Physical Venue Mapping:** Events are grouped and plotted on their actual physical venues using precise coordinate resolution and caches.
+- **Dynamic Event Count Badges:** Map markers display beautiful circular badges with the number of upcoming events scheduled at each physical location.
+- **Pulsing Today Visual Indicator:** Venues hosting at least one active event scheduled for **Today** display a glowing pulsing red ring animation to attract attention.
+- **Vibrant Interactive Sidebar Legend:** A custom-styled visual guide showcasing the dynamic event categories (Music, Arts, Museum, Library, Sports, Parks, etc.) and color mapping.
+- **30+ Live Scraped Calendar Sources:** Automatically crawls, normalizes, and deduplicates the comprehensive registry of event feeds from [GainesvilleEvents.com/sources](https://gainesvilleevents.com/sources/).
 - **Interactive Folium Map:** Switch dynamically between standard **Pin Cluster** and **Density Heatmaps**.
-- **Source Scraping & Automated Ingestion:** Live scraper retrieves sources from `gainesvilleevents.com/sources/`, caches results, and maps them efficiently.
-- **Enhanced Search & Filters:** Search for venues by name, filter by multiple categories, or adjust the **Event Time Horizon** (Today, This Weekend, Next 7 Days).
+- **Enhanced Search & Filters:** Search for venues by name, filter by multiple categories, or adjust the **Event Time Horizon** (Today, This Weekend, Next 7 Days, All).
 - **Simulated "Near Me" GPS Location:** Filter to show only venues within a 2.5-mile radius of downtown Gainesville.
 - **Rich Popup Cards & Directions:** Map markers display beautiful UI cards with category tags, mock upcoming event counts, website links, and direct **Google Maps Directions** hyperlinks.
-- **Detailed Schedules Panel:** Expand any venue to view simulated schedules and descriptions of upcoming events.
+- **Detailed Schedules Panel:** Expand any physical venue to view simulated schedules and descriptions of upcoming events.
 
 ---
 
