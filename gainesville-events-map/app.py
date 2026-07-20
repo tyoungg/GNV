@@ -203,6 +203,41 @@ PHYSICAL_VENUES = {
         "lon": -82.3292,
         "website": "https://cypressandgrove.com/",
         "category": "Brewery"
+    },
+    "Reitz Union Lawn": {
+        "address": "655 Reitz Union Drive, Gainesville, FL 32611",
+        "lat": 29.6463,
+        "lon": -82.3478,
+        "website": "https://www.union.ufl.edu/",
+        "category": "Arts"
+    },
+    "Ben Hill Griffin Stadium": {
+        "address": "157 Gale Lemerand Dr, Gainesville, FL 32611",
+        "lat": 29.6499,
+        "lon": -82.3487,
+        "website": "https://floridagators.com/facilities/ben-hill-griffin-stadium/1",
+        "category": "Sports"
+    },
+    "Stephen C. O'Connell Center": {
+        "address": "250 Gale Lemerand Dr, Gainesville, FL 32611",
+        "lat": 29.6494,
+        "lon": -82.3512,
+        "website": "https://www.oconnellcenter.com/",
+        "category": "Sports"
+    },
+    "Sweetwater Wetlands Park": {
+        "address": "3215 SE Williston Rd, Gainesville, FL 32641",
+        "lat": 29.6225,
+        "lon": -82.3015,
+        "website": "https://www.gainesvillefl.gov/Parks-Conservation-Recreation/Sweetwater-Wetlands-Park",
+        "category": "Park"
+    },
+    "The Wooly": {
+        "address": "20 N Main St, Gainesville, FL 32601",
+        "lat": 29.6515,
+        "lon": -82.3253,
+        "website": "https://thewooly.com/",
+        "category": "Arts"
     }
 }
 
@@ -213,13 +248,18 @@ PHYSICAL_VENUES = {
 def generate_mock_events(venue_names_tuple, today_str):
     import datetime
     random.seed(42)  # For consistent results
-    categories_pool = ["Music", "Theater", "Family", "Outdoor", "Food & Drink", "Community"]
     events = {}
 
     base_date = datetime.date.fromisoformat(today_str)
     today_weekday = base_date.weekday()  # Monday=0, Sunday=6
 
     for name in venue_names_tuple:
+        # Determine categories pool based on name context to ensure accurate content mapping
+        if "gators" in name.lower() or "sports" in name.lower():
+            categories_pool = ["Sports"]
+        else:
+            categories_pool = ["Music", "Theater", "Family", "Outdoor", "Food & Drink", "Community"]
+
         num_events = random.randint(1, 15)
         venue_events = []
 
@@ -273,7 +313,8 @@ def generate_mock_events(venue_names_tuple, today_str):
                 "Family": ["Open Gym & Family Play", "Kids Storytime & Crafts", "Family Fun Festival", "Science Saturday Exploration"],
                 "Outdoor": ["Guided Nature Walk", "Community Morning Yoga", "Sunset Bicycle Tour", "Farmer's Market & Crafts"],
                 "Food & Drink": ["Trivia & Craft Beer Night", "Local Food Truck Rally", "Wine & Cheese Tasting", "Home Brewing Masterclass"],
-                "Community": ["Town Hall Forum", "Community Volunteer Cleanup", "Local Artisan Fair", "Gainesville Tech Meetup"]
+                "Community": ["Town Hall Forum", "Community Volunteer Cleanup", "Local Artisan Fair", "Gainesville Tech Meetup"],
+                "Sports": ["Gators Football Game", "Gators Basketball Game", "Gators Gymnastics Meet", "Gators Baseball Game"]
             }
             title_pool = titles.get(tag, ["Exciting Gathering"])
             title = f"{random.choice(title_pool)}"
@@ -292,18 +333,49 @@ def generate_mock_events(venue_names_tuple, today_str):
                 title = title.replace("Morning", "Afternoon" if start_hour in [12, 1, 2, 3, 4] else "Evening")
 
             # Determine coordinates and address of the physical event host
-            if source_is_physical:
-                event_venue_name = physical_key
-                event_lat = PHYSICAL_VENUES[physical_key]["lat"]
-                event_lon = PHYSICAL_VENUES[physical_key]["lon"]
-                event_address = PHYSICAL_VENUES[physical_key]["address"]
-            else:
-                # Choose from all physical venues randomly for online/media source events
-                chosen_key = random.choice(list(PHYSICAL_VENUES.keys()))
-                event_venue_name = chosen_key
-                event_lat = PHYSICAL_VENUES[chosen_key]["lat"]
-                event_lon = PHYSICAL_VENUES[chosen_key]["lon"]
-                event_address = PHYSICAL_VENUES[chosen_key]["address"]
+            event_venue_name = None
+            event_lat = None
+            event_lon = None
+            event_address = None
+
+            # Deeper context location resolution based on event title keywords
+            title_location_mapping = {
+                "Shakespeare in the Park": "Reitz Union Lawn",
+                "Gators Football Game": "Ben Hill Griffin Stadium",
+                "Gators Basketball Game": "Stephen C. O'Connell Center",
+                "Gators Gymnastics Meet": "Stephen C. O'Connell Center",
+                "Gators Baseball Game": "Stephen C. O'Connell Center",
+                "Guided Nature Walk": "Sweetwater Wetlands Park",
+                "Sunset Bicycle Tour": "Sweetwater Wetlands Park",
+                "Comedy Night Live": "The Wooly",
+                "Improv Workshop": "The Wooly",
+                "Jazz under the Stars": "Bo Diddley Plaza",
+                "Farmer's Market & Crafts": "Bo Diddley Plaza"
+            }
+
+            for kw, target_venue in title_location_mapping.items():
+                if kw in title:
+                    if target_venue in PHYSICAL_VENUES:
+                        event_venue_name = target_venue
+                        event_lat = PHYSICAL_VENUES[target_venue]["lat"]
+                        event_lon = PHYSICAL_VENUES[target_venue]["lon"]
+                        event_address = PHYSICAL_VENUES[target_venue]["address"]
+                        break
+
+            # Fallback to source physical mapping or random allocation
+            if not event_venue_name:
+                if source_is_physical:
+                    event_venue_name = physical_key
+                    event_lat = PHYSICAL_VENUES[physical_key]["lat"]
+                    event_lon = PHYSICAL_VENUES[physical_key]["lon"]
+                    event_address = PHYSICAL_VENUES[physical_key]["address"]
+                else:
+                    # Choose from all physical venues randomly for online/media source events
+                    chosen_key = random.choice(list(PHYSICAL_VENUES.keys()))
+                    event_venue_name = chosen_key
+                    event_lat = PHYSICAL_VENUES[chosen_key]["lat"]
+                    event_lon = PHYSICAL_VENUES[chosen_key]["lon"]
+                    event_address = PHYSICAL_VENUES[chosen_key]["address"]
 
             venue_events.append({
                 "title": title,
