@@ -131,6 +131,19 @@ def generate_mock_events(venue_names_tuple, today_str):
             title_pool = titles.get(tag, ["Exciting Gathering"])
             title = f"{random.choice(title_pool)}"
 
+            # Dynamically align content with the actual date and time
+            actual_weekday_name = event_date.strftime("%A")
+            title = title.replace("Saturday", actual_weekday_name)
+            title = title.replace("Sunday", actual_weekday_name)
+            title = title.replace("Monday", actual_weekday_name)
+            title = title.replace("Tuesday", actual_weekday_name)
+            title = title.replace("Wednesday", actual_weekday_name)
+            title = title.replace("Thursday", actual_weekday_name)
+            title = title.replace("Friday", actual_weekday_name)
+
+            if meridiem == "PM" and "Morning" in title:
+                title = title.replace("Morning", "Afternoon" if start_hour in [12, 1, 2, 3, 4] else "Evening")
+
             venue_events.append({
                 "title": title,
                 "tag": tag.upper(),
@@ -349,64 +362,100 @@ if map_data and map_data.get("last_object_clicked_tooltip"):
     if clicked_venue in filtered["name"].values:
         st.session_state["selected_venue"] = clicked_venue
 
-# --- Click Interaction / Venue Details Sidebar ---
+# --- Click Interaction / Venue Details Sidebar & Tabbed Schedules ---
 st.markdown("---")
-st.subheader("🗓️ Venue Details & Events List")
+st.subheader("🗓️ Venue Explorer & Full Schedule")
 
 if len(filtered) == 0:
     st.warning("No venues found matching the current filters.")
 else:
-    # Ensure current state venue is valid with current filters, else fallback
-    venue_list = sorted(filtered["name"].unique())
-    current_selected = st.session_state["selected_venue"]
-    if current_selected not in venue_list:
-        current_selected = venue_list[0]
-        st.session_state["selected_venue"] = current_selected
+    # 2. Add Tabbed interface
+    tab1, tab2 = st.tabs(["📅 Full Schedule (All Selected Venues)", "📍 Individual Venue Explorer"])
 
-    # Interactive dropdown to manually change venue or view updated state hook selection
-    selected_venue_idx = venue_list.index(current_selected)
+    # Collect and filter all events from all selected venues
+    all_selected_events = []
+    for _, row in filtered.iterrows():
+        v_name = row["name"]
+        events = mock_events.get(v_name, [])
+        for ev in events:
+            # Filter events based on time slide filter
+            if time_filter == "Today" and ev["timeframe"] != "Today":
+                continue
+            if time_filter == "This Weekend" and ev["timeframe"] not in ["Today", "This Weekend"]:
+                continue
+            if time_filter == "Next 7 Days" and ev["timeframe"] not in ["Today", "This Weekend", "Next 7 Days"]:
+                continue
 
-    selected_venue_name = st.selectbox(
-        "Select a venue to inspect its upcoming events:",
-        venue_list,
-        index=selected_venue_idx
-    )
-    # Save manually updated option back to state
-    st.session_state["selected_venue"] = selected_venue_name
+            all_selected_events.append({
+                **ev,
+                "venue_name": v_name,
+                "category": row["category"]
+            })
 
-    venue_data = filtered[filtered["name"] == selected_venue_name].iloc[0]
-    st.markdown(f"### {emojis_mapping.get(venue_data['category'], '📍')} {venue_data['name']}")
+    # Sort all events chronologically
+    all_selected_events.sort(key=lambda x: x["days_away"])
 
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.markdown(f"**Category:** {venue_data['category']}")
-        st.markdown(f"**Website:** [Visit Official Website]({venue_data['website']})")
-        if "date_added" in venue_data and str(venue_data["date_added"]) != "nan":
-            st.markdown(f"📅 **Added to map:** {venue_data['date_added']}")
-        directions_link = f"https://www.google.com/maps/dir/?api=1&destination={venue_data['lat']},{venue_data['lon']}"
-        st.markdown(f"🚗 [Get Google Maps Directions]({directions_link})")
-
-    with col2:
-        st.markdown("**Upcoming Events Schedule:**")
-        events = mock_events.get(selected_venue_name, [])
-        if not events:
-            st.write("No events scheduled for this venue in the selected time horizon.")
+    with tab1:
+        st.markdown(f"**Showing all {len(all_selected_events)} events across all {len(filtered)} selected venues matching the \"{time_filter}\" horizon.**")
+        if not all_selected_events:
+            st.info("No events scheduled across any of the selected venues in this time horizon.")
         else:
-            for ev in events:
-                # Filter events based on time slide filter
-                if time_filter == "Today" and ev["timeframe"] != "Today":
-                    continue
-                if time_filter == "This Weekend" and ev["timeframe"] not in ["Today", "This Weekend"]:
-                    continue
-                if time_filter == "Next 7 Days" and ev["timeframe"] not in ["Today", "This Weekend", "Next 7 Days"]:
-                    continue
-
+            for ev in all_selected_events:
                 st.markdown(f"""
-                <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
+                <div style="background-color: #F9FAFB; border-left: 4px solid #1E3A8A; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
                     <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
-                    <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {selected_venue_name}</div>
+                    <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {ev['venue_name']}</div>
                     <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
                     <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
-                    <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">{selected_venue_name}</div>
+                    <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">{ev['venue_name']}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+    with tab2:
+        # Ensure current state venue is valid with current filters, else fallback
+        venue_list = sorted(filtered["name"].unique())
+        current_selected = st.session_state["selected_venue"]
+        if current_selected not in venue_list:
+            current_selected = venue_list[0]
+            st.session_state["selected_venue"] = current_selected
+
+        # Interactive dropdown to manually change venue or view updated state hook selection
+        selected_venue_idx = venue_list.index(current_selected)
+
+        selected_venue_name = st.selectbox(
+            "Select a venue to inspect its upcoming events:",
+            venue_list,
+            index=selected_venue_idx,
+            key="venue_selectbox"
+        )
+        # Save manually updated option back to state
+        st.session_state["selected_venue"] = selected_venue_name
+
+        venue_data = filtered[filtered["name"] == selected_venue_name].iloc[0]
+        st.markdown(f"### {emojis_mapping.get(venue_data['category'], '📍')} {venue_data['name']}")
+
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.markdown(f"**Category:** {venue_data['category']}")
+            st.markdown(f"**Website:** [Visit Official Website]({venue_data['website']})")
+            if "date_added" in venue_data and str(venue_data["date_added"]) != "nan":
+                st.markdown(f"📅 **Added to map:** {venue_data['date_added']}")
+            directions_link = f"https://www.google.com/maps/dir/?api=1&destination={venue_data['lat']},{venue_data['lon']}"
+            st.markdown(f"🚗 [Get Google Maps Directions]({directions_link})")
+
+        with col2:
+            st.markdown("**Upcoming Events Schedule:**")
+            venue_events = [e for e in all_selected_events if e["venue_name"] == selected_venue_name]
+            if not venue_events:
+                st.write("No events scheduled for this venue in the selected time horizon.")
+            else:
+                for ev in venue_events:
+                    st.markdown(f"""
+                    <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
+                        <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
+                        <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {selected_venue_name}</div>
+                        <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
+                        <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
+                        <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">{selected_venue_name}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
