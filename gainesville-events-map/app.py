@@ -69,6 +69,96 @@ except Exception as e:
     st.stop()
 
 # --- Feature Enhancements & Mock Data Generation ---
+
+# A precise registry of physical hosting venues in Gainesville with coordinates and addresses.
+# This prevents online portal coordinates (general city centers) from being used for actual event directions.
+PHYSICAL_VENUES = {
+    "Cade Museum": {
+        "address": "811 S Main St, Gainesville, FL 32601",
+        "lat": 29.6443,
+        "lon": -82.3168,
+        "website": "https://cademuseum.org/"
+    },
+    "Florida Museum of Natural History": {
+        "address": "3215 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6381,
+        "lon": -82.3692,
+        "website": "https://www.floridamuseum.ufl.edu/"
+    },
+    "Harn Museum of Art": {
+        "address": "3259 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6370,
+        "lon": -82.3698,
+        "website": "https://harn.ufl.edu/"
+    },
+    "UF Performing Arts": {
+        "address": "3201 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6365,
+        "lon": -82.3693,
+        "website": "https://performingarts.ufl.edu/"
+    },
+    "Depot Park": {
+        "address": "874 SE 4th St, Gainesville, FL 32601",
+        "lat": 29.6438,
+        "lon": -82.3217,
+        "website": "https://www.depotpark.org/"
+    },
+    "Heartwood Soundstage": {
+        "address": "619 S Main St, Gainesville, FL 32601",
+        "lat": 29.6450,
+        "lon": -82.3240,
+        "website": "https://www.heartwoodsoundstage.com/"
+    },
+    "Hippodrome Theatre": {
+        "address": "25 SE 2nd Pl, Gainesville, FL 32601",
+        "lat": 29.6513,
+        "lon": -82.3244,
+        "website": "https://thehipp.org/"
+    },
+    "High Dive": {
+        "address": "210 SW 2nd Ave, Gainesville, FL 32601",
+        "lat": 29.6521,
+        "lon": -82.3243,
+        "website": "https://highdivegville.com/"
+    },
+    "Celebration Pointe": {
+        "address": "4949 Celebration Pointe Ave, Gainesville, FL 32608",
+        "lat": 29.6263,
+        "lon": -82.4363,
+        "website": "https://www.celebrationpointe.com/"
+    },
+    "Santa Fe College": {
+        "address": "3000 NW 83rd St, Gainesville, FL 32606",
+        "lat": 29.6806,
+        "lon": -82.4385,
+        "website": "https://www.sfcollege.edu/"
+    },
+    "Alachua County Library District": {
+        "address": "401 E University Ave, Gainesville, FL 32601",
+        "lat": 29.6515,
+        "lon": -82.3244,
+        "website": "https://www.aclib.us/"
+    },
+    "Bo Diddley Plaza": {
+        "address": "111 E University Ave, Gainesville, FL 32601",
+        "lat": 29.6515,
+        "lon": -82.3248,
+        "website": "https://www.bodiddleyplaza.com/"
+    },
+    "First Magnitude Brewing Company": {
+        "address": "1220 SE Veitch St, Gainesville, FL 32601",
+        "lat": 29.6402,
+        "lon": -82.3238,
+        "website": "https://fmbrew.com/"
+    },
+    "Cypress & Grove Brewing Co.": {
+        "address": "512 NW 4th St, Gainesville, FL 32601",
+        "lat": 29.6558,
+        "lon": -82.3292,
+        "website": "https://cypressandgrove.com/"
+    }
+}
+
 # Note: Streamlit's @st.cache_data tries to hash input parameters.
 # Passing a NumPy array (like df["name"].unique()) can throw UnhashableParamError in some Streamlit environments.
 # Converting the parameter to a standard Python tuple or loading it inside avoids caching issues.
@@ -85,6 +175,16 @@ def generate_mock_events(venue_names_tuple, today_str):
     for name in venue_names_tuple:
         num_events = random.randint(1, 15)
         venue_events = []
+
+        # Check if the source name represents one of our known physical venues
+        source_is_physical = False
+        physical_key = None
+        for key in PHYSICAL_VENUES:
+            if key.lower() in name.lower() or name.lower() in key.lower():
+                source_is_physical = True
+                physical_key = key
+                break
+
         for i in range(num_events):
             days_away = random.randint(0, 10)
 
@@ -144,6 +244,20 @@ def generate_mock_events(venue_names_tuple, today_str):
             if meridiem == "PM" and "Morning" in title:
                 title = title.replace("Morning", "Afternoon" if start_hour in [12, 1, 2, 3, 4] else "Evening")
 
+            # Determine coordinates and address of the physical event host
+            if source_is_physical:
+                event_venue_name = physical_key
+                event_lat = PHYSICAL_VENUES[physical_key]["lat"]
+                event_lon = PHYSICAL_VENUES[physical_key]["lon"]
+                event_address = PHYSICAL_VENUES[physical_key]["address"]
+            else:
+                # Choose from all physical venues randomly for online/media source events
+                chosen_key = random.choice(list(PHYSICAL_VENUES.keys()))
+                event_venue_name = chosen_key
+                event_lat = PHYSICAL_VENUES[chosen_key]["lat"]
+                event_lon = PHYSICAL_VENUES[chosen_key]["lon"]
+                event_address = PHYSICAL_VENUES[chosen_key]["address"]
+
             venue_events.append({
                 "title": title,
                 "tag": tag.upper(),
@@ -152,7 +266,12 @@ def generate_mock_events(venue_names_tuple, today_str):
                 "date_str": event_date_str,
                 "time_range": time_range,
                 "cost": cost,
-                "description": f"Join us at {name} for this incredible {tag.lower()} experience!"
+                "event_venue": event_venue_name,
+                "event_lat": event_lat,
+                "event_lon": event_lon,
+                "event_address": event_address,
+                "source_name": name,
+                "description": f"Join us at {event_venue_name} for this incredible {tag.lower()} experience!"
             })
         # Sort by days away
         venue_events.sort(key=lambda x: x["days_away"])
@@ -308,13 +427,15 @@ if map_view_type == "Standard Pin Cluster":
         first_event_html = ""
         if events:
             ev = events[0]
+            # Provide GPS directions to the actual physical venue of the event, NOT the online source portal
+            directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
             first_event_html = f"""
             <div style="border-top: 1px solid #E5E7EB; margin-top: 10px; padding-top: 10px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.4;">
                 <div style="font-weight: bold; font-size: 0.95rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
-                <div style="color: #4B5563; font-size: 0.85rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {name}</div>
+                <div style="color: #4B5563; font-size: 0.85rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
                 <div style="color: #4B5563; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
                 <div style="color: #059669; font-weight: bold; font-size: 0.75rem; margin-bottom: 2px;">{ev['cost']}</div>
-                <div style="color: #2563EB; font-size: 0.8rem; font-weight: 500;">{name}</div>
+                <div style="color: #2563EB; font-size: 0.8rem; font-weight: 500;">Source: {name}</div>
             </div>
             """
 
@@ -326,7 +447,7 @@ if map_view_type == "Standard Pin Cluster":
             {first_event_html}
             <div style="margin-top: 12px; border-top: 1px solid #E5E7EB; padding-top: 8px; display: flex; gap: 6px;">
                 <a href="{url}" target="_blank" style="background-color: #2563EB; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Website</a>
-                <a href="{directions_url}" target="_blank" style="background-color: #059669; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Directions</a>
+                <a href="{directions_url}" target="_blank" style="background-color: #059669; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Directions to Event</a>
             </div>
         </div>
         """
@@ -401,13 +522,14 @@ else:
             st.info("No events scheduled across any of the selected venues in this time horizon.")
         else:
             for ev in all_selected_events:
+                ev_directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
                 st.markdown(f"""
                 <div style="background-color: #F9FAFB; border-left: 4px solid #1E3A8A; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
                     <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
-                    <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {ev['venue_name']}</div>
-                    <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
+                    <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
+                    <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <a href="{ev_directions_url}" target="_blank" style="color: #059669; text-decoration: none;">🚗 Directions to Event Venue</a></div>
                     <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
-                    <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">{ev['venue_name']}</div>
+                    <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">Calendar Source: {ev['venue_name']}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -441,7 +563,7 @@ else:
             if "date_added" in venue_data and str(venue_data["date_added"]) != "nan":
                 st.markdown(f"📅 **Added to map:** {venue_data['date_added']}")
             directions_link = f"https://www.google.com/maps/dir/?api=1&destination={venue_data['lat']},{venue_data['lon']}"
-            st.markdown(f"🚗 [Get Google Maps Directions]({directions_link})")
+            st.markdown(f"🚗 [Get Google Maps Directions to Source Headquarters]({directions_link})")
 
         with col2:
             st.markdown("**Upcoming Events Schedule:**")
@@ -450,12 +572,13 @@ else:
                 st.write("No events scheduled for this venue in the selected time horizon.")
             else:
                 for ev in venue_events:
+                    ev_directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
                     st.markdown(f"""
                     <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
                         <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
-                        <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · {selected_venue_name}</div>
-                        <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']}</div>
+                        <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
+                        <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <a href="{ev_directions_url}" target="_blank" style="color: #3B82F6; text-decoration: none;">🚗 Directions to Event Venue</a></div>
                         <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
-                        <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">{selected_venue_name}</div>
+                        <div style="color: #2563EB; font-size: 0.85rem; font-weight: 500;">Calendar Source: {selected_venue_name}</div>
                     </div>
                     """, unsafe_allow_html=True)
