@@ -26,6 +26,14 @@ st.markdown("""
         color: #4B5563;
         margin-bottom: 2rem;
     }
+    @keyframes pulse-glow {
+        0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.8); }
+        70% { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+    .glow-active {
+        animation: pulse-glow 2s infinite;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -67,6 +75,31 @@ try:
 except Exception as e:
     st.error(f"Error loading venue data: {e}")
     st.stop()
+
+# --- Global Mappings ---
+colors_mapping = {
+    "Music": "#1E3A8A",      # Deep blue
+    "Arts": "#7C3AED",       # Violet/Purple
+    "Museum": "#059669",     # Emerald green
+    "Library": "#D97706",    # Warm orange
+    "Park": "#15803D",       # Dark green
+    "Sports": "#0891B2",     # Cyan/Cadet blue
+    "University": "#111827", # Charcoal/Black
+    "Brewery": "#DC2626",    # Vibrant red
+    "Other": "#4B5563"       # Slate gray
+}
+
+emojis_mapping = {
+    "Music": "🎵",
+    "Arts": "🎨",
+    "Museum": "🏛️",
+    "Library": "📚",
+    "Park": "🌳",
+    "Sports": "⚾",
+    "University": "🎓",
+    "Brewery": "🍺",
+    "Other": "📍"
+}
 
 # --- Feature Enhancements & Mock Data Generation ---
 
@@ -335,6 +368,17 @@ user_lon = -82.3240
 if near_me_enabled:
     st.sidebar.info("🎯 Simulating location near Heartwood Soundstage (South Downtown Gainesville). Only venues within ~2.5 miles are highlighted in the list!")
 
+# --- Map Legend ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎨 Map Legend")
+legend_html = '<div style="font-family: \'Helvetica Neue\', Arial, sans-serif; font-size: 0.85rem; line-height: 1.6;">'
+for category_name, hex_color in colors_mapping.items():
+    emoji = emojis_mapping.get(category_name, "📍")
+    legend_html += f'<div style="display: flex; align-items: center; margin-bottom: 6px;"><span style="background-color: {hex_color}; border-radius: 50%; width: 14px; height: 14px; display: inline-block; margin-right: 8px; border: 1px solid white; box-shadow: 0px 1px 3px rgba(0,0,0,0.2);"></span><span>{emoji} <b>{category_name}</b></span></div>'
+
+legend_html += '<div style="margin-top: 10px; border-top: 1px solid #E5E7EB; padding-top: 8px; display: flex; align-items: center; gap: 8px;"><span class="glow-active" style="background-color: #DC2626; border-radius: 50%; width: 14px; height: 14px; display: inline-block; border: 2px solid #FF3B30;"></span><span style="font-size: 0.75rem; color: #DC2626; font-weight: bold;">Pulse: Event Today!</span></div></div>'
+st.sidebar.markdown(legend_html, unsafe_allow_html=True)
+
 # --- Filter Logic ---
 # Gather all mock events across all sources and filter them dynamically
 active_events = []
@@ -428,30 +472,6 @@ with col3:
     st.metric("Active Categories", len(filtered["category"].unique()) if len(filtered) > 0 else 0)
 
 # --- Build Folium Map ---
-colors_mapping = {
-    "Music": "blue",
-    "Arts": "purple",
-    "Museum": "green",
-    "Library": "orange",
-    "Park": "darkgreen",
-    "Sports": "cadetblue",
-    "University": "black",
-    "Brewery": "red",
-    "Other": "gray"
-}
-
-emojis_mapping = {
-    "Music": "🎵",
-    "Arts": "🎨",
-    "Museum": "🏛️",
-    "Library": "📚",
-    "Park": "🌳",
-    "Sports": "⚾",
-    "University": "🎓",
-    "Brewery": "🍺",
-    "Other": "📍"
-}
-
 # Base location for Map: center of Gainesville
 m = folium.Map(
     location=[29.6516, -82.3248],
@@ -518,13 +538,46 @@ if map_view_type == "Standard Pin Cluster":
         </div>
         """
 
+        tooltip_text = f"{name} ({len(v_events)} active events)" if v_events else name
+
+        # Check if any event is scheduled for Today
+        has_today = any(ev["timeframe"] == "Today" for ev in v_events)
+        glow_class = "glow-active" if has_today else ""
+        border_style = "border: 2px solid #FFFFFF;"
+        if has_today:
+            border_style = "border: 2.5px solid #FF3B30;" # Bright red accent border for today's events
+
+        marker_color = colors_mapping.get(cat, "#4B5563")
+        event_count = len(v_events)
+
+        pin_content = f"""
+        <div class="{glow_class}" style="
+            background-color: {marker_color};
+            {border_style}
+            border-radius: 50%;
+            color: white;
+            font-weight: 800;
+            font-size: 11px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0px 3px 6px rgba(0,0,0,0.3);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        ">
+            {event_count}
+        </div>
+        """
+
         folium.Marker(
             [lat, lon],
             popup=folium.Popup(popup_html, max_width=300),
-            tooltip=name,
-            icon=folium.Icon(
-                color=colors_mapping.get(cat, "gray"),
-                icon="info-sign"
+            tooltip=tooltip_text,
+            icon=folium.DivIcon(
+                html=pin_content,
+                icon_size=(32, 32),
+                icon_anchor=(16, 16)
             )
         ).add_to(cluster)
 else:
