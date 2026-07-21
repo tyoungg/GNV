@@ -42,30 +42,43 @@ jobs:
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-            BRANCH_NAME="auto-update-venues-$(date +%Y%m%d-%H%M%S)"
-            git checkout -b "$BRANCH_NAME"
+            BRANCH_NAME="auto-update-venues"
+            git checkout -B "$BRANCH_NAME"
             git add gainesville-events-map/data/venues.csv
             git commit -m "chore: auto-update venues cache"
-            git push origin "$BRANCH_NAME"
+            git push -f origin "$BRANCH_NAME"
 
-            if ! gh pr create \
-              --title "chore: auto-update venues cache" \
-              --body "An automated nightly run has detected new or updated event sources on GainesvilleEvents.com. This Pull Request updates the local cache file \`gainesville-events-map/data/venues.csv\`." \
-              --head "$BRANCH_NAME"; then
+            # Check if a PR already exists for this branch (use // empty to output empty string instead of null)
+            EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json url --jq '.[0].url // empty' 2>/dev/null || true)
 
-              echo "::warning:: Failed to automatically create a Pull Request."
-              echo "This is typically because the GITHUB_TOKEN permissions do not allow GitHub Actions to create or approve pull requests."
-              echo "To fix this, please go to your repository Settings -> Actions -> General -> Workflow permissions, and check 'Allow GitHub Actions to create and approve pull requests'."
+            if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+              echo "A Pull Request for this branch already exists: $EXISTING_PR"
+              echo "The branch was force-pushed, so the existing PR is automatically updated."
 
-              PR_URL="https://github.com/$GITHUB_REPOSITORY/compare/main...$BRANCH_NAME?expand=1"
+              echo "### ✅ Auto-update Branch Updated" >> $GITHUB_STEP_SUMMARY
+              echo "The nightly run detected updates, force-pushed them to the static branch **$BRANCH_NAME**, and automatically updated the existing Pull Request:" >> $GITHUB_STEP_SUMMARY
+              echo "👉 **[View Pull Request]($EXISTING_PR)**" >> $GITHUB_STEP_SUMMARY
+            else
+              # Try creating the PR
+              if ! gh pr create \
+                --title "chore: auto-update venues cache" \
+                --body "An automated nightly run has detected new or updated event sources on GainesvilleEvents.com. This Pull Request updates the local cache file \`gainesville-events-map/data/venues.csv\`." \
+                --head "$BRANCH_NAME"; then
 
-              echo "### ⚠️ Auto-update Pull Request Blocked" >> $GITHUB_STEP_SUMMARY
-              echo "The automated nightly run successfully pushed a new branch **$BRANCH_NAME** with updated venue cache data, but could not automatically open a Pull Request due to workflow permissions." >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "#### How to Resolve:" >> $GITHUB_STEP_SUMMARY
-              echo "1. **Enable Actions PR Creation Permissions:** Go to your repository settings at **Settings > Actions > General > Workflow permissions** and check **'Allow GitHub Actions to create and approve pull requests'** to prevent this error in future runs." >> $GITHUB_STEP_SUMMARY
-              echo "2. **Manually Create PR:** Click the link below to open and merge the Pull Request manually for this run:" >> $GITHUB_STEP_SUMMARY
-              echo "   👉 **[Create Pull Request Manually]($PR_URL)**" >> $GITHUB_STEP_SUMMARY
+                echo "::warning:: Failed to automatically create a Pull Request."
+                echo "This is typically because the GITHUB_TOKEN permissions do not allow GitHub Actions to create or approve pull requests."
+                echo "To fix this, please go to your repository Settings -> Actions -> General -> Workflow permissions, and check 'Allow GitHub Actions to create and approve pull requests'."
+
+                PR_URL="https://github.com/$GITHUB_REPOSITORY/compare/main...$BRANCH_NAME?expand=1"
+
+                echo "### ⚠️ Auto-update Pull Request Blocked" >> $GITHUB_STEP_SUMMARY
+                echo "The automated nightly run successfully pushed a new branch **$BRANCH_NAME** with updated venue cache data, but could not automatically open a Pull Request due to workflow permissions." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "#### How to Resolve:" >> $GITHUB_STEP_SUMMARY
+                echo "1. **Enable Actions PR Creation Permissions:** Go to your repository settings at **Settings > Actions > General > Workflow permissions** and check **'Allow GitHub Actions to create and approve pull requests'** to prevent this error in future runs." >> $GITHUB_STEP_SUMMARY
+                echo "2. **Manually Create PR:** Click the link below to open and merge the Pull Request manually for this run:" >> $GITHUB_STEP_SUMMARY
+                echo "   👉 **[Create Pull Request Manually]($PR_URL)**" >> $GITHUB_STEP_SUMMARY
+              fi
             fi
           else
             echo "No changes detected in venues.csv. Everything is up-to-date."
