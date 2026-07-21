@@ -48,10 +48,25 @@ jobs:
             git commit -m "chore: auto-update venues cache"
             git push origin "$BRANCH_NAME"
 
-            gh pr create \
+            if ! gh pr create \
               --title "chore: auto-update venues cache" \
               --body "An automated nightly run has detected new or updated event sources on GainesvilleEvents.com. This Pull Request updates the local cache file \`gainesville-events-map/data/venues.csv\`." \
-              --head "$BRANCH_NAME"
+              --head "$BRANCH_NAME"; then
+
+              echo "::warning:: Failed to automatically create a Pull Request."
+              echo "This is typically because the GITHUB_TOKEN permissions do not allow GitHub Actions to create or approve pull requests."
+              echo "To fix this, please go to your repository Settings -> Actions -> General -> Workflow permissions, and check 'Allow GitHub Actions to create and approve pull requests'."
+
+              PR_URL="https://github.com/$GITHUB_REPOSITORY/compare/main...$BRANCH_NAME?expand=1"
+
+              echo "### ⚠️ Auto-update Pull Request Blocked" >> $GITHUB_STEP_SUMMARY
+              echo "The automated nightly run successfully pushed a new branch **$BRANCH_NAME** with updated venue cache data, but could not automatically open a Pull Request due to workflow permissions." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### How to Resolve:" >> $GITHUB_STEP_SUMMARY
+              echo "1. **Enable Actions PR Creation Permissions:** Go to your repository settings at **Settings > Actions > General > Workflow permissions** and check **'Allow GitHub Actions to create and approve pull requests'** to prevent this error in future runs." >> $GITHUB_STEP_SUMMARY
+              echo "2. **Manually Create PR:** Click the link below to open and merge the Pull Request manually for this run:" >> $GITHUB_STEP_SUMMARY
+              echo "   👉 **[Create Pull Request Manually]($PR_URL)**" >> $GITHUB_STEP_SUMMARY
+            fi
           else
             echo "No changes detected in venues.csv. Everything is up-to-date."
           fi
