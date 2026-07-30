@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+from urllib.parse import urlparse
 
 def normalize_name(name: str) -> str:
     """
@@ -120,7 +121,9 @@ def scrape_sources():
         website = a.get("href", "").strip()
 
         # Filter out navigation links, standard header/footer links
-        if not website or website.startswith("/") or "gainesvilleevents.com" in website:
+        parsed = urlparse(website)
+        is_internal = parsed.netloc == "gainesvilleevents.com" or parsed.netloc.endswith(".gainesvilleevents.com")
+        if not website or website.startswith("/") or is_internal:
             if not website.endswith("feed.ics"):
                 continue
 
