@@ -539,7 +539,9 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Total Venues Selected", len(filtered))
 with col2:
-    st.metric("Total Match Events Found", len(active_events))
+    # Deduplicate active events by title, date, and venue to count unique physical events
+    unique_active_events_count = len(set((ev["title"].lower().strip(), ev["date_str"], ev["event_venue"]) for ev in active_events))
+    st.metric("Total Match Events Found", unique_active_events_count)
 with col3:
     st.metric("Active Categories", len(filtered["category"].unique()) if len(filtered) > 0 else 0)
 
@@ -573,6 +575,7 @@ if map_view_type == "Standard Pin Cluster":
         address = row.get("address", "")
 
         v_events = events_by_physical_venue.get(name, [])
+        unique_events_count = len(set((ev["title"].lower().strip(), ev["date_str"]) for ev in v_events))
         emoji = emojis_mapping.get(cat, "📍")
 
         # Directions link to Google Maps
@@ -583,7 +586,7 @@ if map_view_type == "Standard Pin Cluster":
         events_html = ""
         if v_events:
             events_html += '<div style="border-top: 1px solid #E5E7EB; margin-top: 10px; padding-top: 10px; font-family: \'Helvetica Neue\', Arial, sans-serif; line-height: 1.4; max-height: 180px; overflow-y: auto;">'
-            events_html += f'<div style="font-weight: bold; font-size: 0.9rem; color: #374151; margin-bottom: 6px;">Upcoming Events ({len(v_events)}):</div>'
+            events_html += f'<div style="font-weight: bold; font-size: 0.9rem; color: #374151; margin-bottom: 6px;">Upcoming Events ({unique_events_count}):</div>'
             for ev in v_events[:3]:
                 events_html += f"""
                 <div style="margin-bottom: 8px; border-bottom: 1px dashed #F3F4F6; padding-bottom: 6px;">
@@ -610,7 +613,7 @@ if map_view_type == "Standard Pin Cluster":
         </div>
         """
 
-        tooltip_text = f"{name} ({len(v_events)} active events)" if v_events else name
+        tooltip_text = f"{name} ({unique_events_count} active events)" if v_events else name
 
         # Check if any event is scheduled for Today
         has_today = any(ev["timeframe"] == "Today" for ev in v_events)
@@ -620,7 +623,7 @@ if map_view_type == "Standard Pin Cluster":
             border_style = "border: 2.5px solid #FF3B30;" # Bright red accent border for today's events
 
         marker_color = colors_mapping.get(cat, "#4B5563")
-        event_count = len(v_events)
+        event_count = unique_events_count
 
         pin_content = f"""
         <div class="{glow_class}" style="
@@ -674,6 +677,9 @@ map_data = st_folium(
 # When a marker is clicked on standard map view, update the session_state selected_venue!
 if map_data and map_data.get("last_object_clicked_tooltip"):
     clicked_venue = map_data["last_object_clicked_tooltip"]
+    # Extract name if it contains count details, e.g., "Bo Diddley Plaza (2 active events)"
+    if " (" in clicked_venue and clicked_venue.endswith(" active events)"):
+        clicked_venue = clicked_venue.split(" (")[0]
     # Check if clicked venue exists in current filter set
     if clicked_venue in filtered["name"].values:
         st.session_state["selected_venue"] = clicked_venue
