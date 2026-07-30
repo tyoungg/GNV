@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import folium
-import random
 import os
+import re
+import datetime
 from folium.plugins import MarkerCluster, HeatMap
 from streamlit_folium import st_folium
 
@@ -43,15 +44,10 @@ st.markdown('<div class="subtitle">An interactive guide mapping upcoming events 
 # --- Data Loading ---
 @st.cache_data
 def load_data():
-    # Multi-path fallbacks to guarantee venues.csv is found regardless of wrapper/environment setup
     possible_paths = [
-        # Relative to current file's directory (direct execution)
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "venues.csv"),
-        # Relative to current file's directory with subdirectory (wrapped execution on Streamlit Cloud)
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "gainesville-events-map", "data", "venues.csv"),
-        # Working directory with subfolder
         "gainesville-events-map/data/venues.csv",
-        # Working directory direct
         "data/venues.csv",
     ]
 
@@ -62,11 +58,9 @@ def load_data():
             break
 
     if not csv_path:
-        # Fallback to display the tried paths if none was found
         raise FileNotFoundError(f"Could not locate venues.csv. Tried paths: {possible_paths}")
 
     df = pd.read_csv(csv_path)
-    # Clean up empty or corrupted values
     df = df.dropna(subset=["lat", "lon", "name"])
     return df
 
@@ -101,11 +95,96 @@ emojis_mapping = {
     "Other": "📍"
 }
 
-# --- Feature Enhancements & Mock Data Generation ---
+# --- Feature Enhancements & Live Event Parsing ---
 
-# A precise registry of physical hosting venues in Gainesville with coordinates and addresses.
-# This prevents online portal coordinates (general city centers) from being used for actual event directions.
 PHYSICAL_VENUES = {
+    # --- Library Branches ---
+    "Headquarters Library": {
+        "address": "401 E University Ave, Gainesville, FL 32601",
+        "lat": 29.6515,
+        "lon": -82.3244,
+        "website": "https://www.aclib.us/headquarters",
+        "category": "Library"
+    },
+    "Alachua Branch": {
+        "address": "14913 NW 140th St, Alachua, FL 32615",
+        "lat": 29.7941,
+        "lon": -82.4941,
+        "website": "https://www.aclib.us/alachua",
+        "category": "Library"
+    },
+    "Archer Branch": {
+        "address": "13550 SW 170th St, Archer, FL 32618",
+        "lat": 29.5303,
+        "lon": -82.5186,
+        "website": "https://www.aclib.us/archer",
+        "category": "Library"
+    },
+    "Cone Park Branch": {
+        "address": "2801 E University Ave, Gainesville, FL 32641",
+        "lat": 29.6521,
+        "lon": -82.2887,
+        "website": "https://www.aclib.us/conepark",
+        "category": "Library"
+    },
+    "Hawthorne Branch": {
+        "address": "20078 SE Hawthorn Rd, Hawthorne, FL 32640",
+        "lat": 29.5931,
+        "lon": -82.1105,
+        "website": "https://www.aclib.us/hawthorne",
+        "category": "Library"
+    },
+    "High Springs Branch": {
+        "address": "23779 US-27, High Springs, FL 32643",
+        "lat": 29.8272,
+        "lon": -82.5975,
+        "website": "https://www.aclib.us/highsprings",
+        "category": "Library"
+    },
+    "Library Partnership Branch": {
+        "address": "1130 NE 16th Ave, Gainesville, FL 32601",
+        "lat": 29.6659,
+        "lon": -82.3113,
+        "website": "https://www.aclib.us/partnership",
+        "category": "Library"
+    },
+    "Micanopy Branch": {
+        "address": "706 NE Cholokka Blvd, Micanopy, FL 32667",
+        "lat": 29.5056,
+        "lon": -82.2794,
+        "website": "https://www.aclib.us/micanopy",
+        "category": "Library"
+    },
+    "Millhopper Branch": {
+        "address": "3145 NW 43rd St, Gainesville, FL 32606",
+        "lat": 29.6816,
+        "lon": -82.3892,
+        "website": "https://www.aclib.us/millhopper",
+        "category": "Library"
+    },
+    "Newberry Branch": {
+        "address": "110 South Seaboard Dr, Newberry, FL 32669",
+        "lat": 29.6464,
+        "lon": -82.6078,
+        "website": "https://www.aclib.us/newberry",
+        "category": "Library"
+    },
+    "Tower Road Branch": {
+        "address": "3020 SW 75th St, Gainesville, FL 32608",
+        "lat": 29.6253,
+        "lon": -82.4239,
+        "website": "https://www.aclib.us/towerroad",
+        "category": "Library"
+    },
+    "Waldo Branch": {
+        "address": "14257 Cole St, Waldo, FL 32694",
+        "lat": 29.7891,
+        "lon": -82.1678,
+        "website": "https://www.aclib.us/waldo",
+        "category": "Library"
+    },
+
+    # --- Other Physical Venues ---
     "Cade Museum": {
         "address": "811 S Main St, Gainesville, FL 32601",
         "lat": 29.6443,
@@ -176,13 +255,6 @@ PHYSICAL_VENUES = {
         "website": "https://www.sfcollege.edu/",
         "category": "University"
     },
-    "Alachua County Library District": {
-        "address": "401 E University Ave, Gainesville, FL 32601",
-        "lat": 29.6515,
-        "lon": -82.3244,
-        "website": "https://www.aclib.us/",
-        "category": "Library"
-    },
     "Bo Diddley Plaza": {
         "address": "111 E University Ave, Gainesville, FL 32601",
         "lat": 29.6515,
@@ -238,191 +310,435 @@ PHYSICAL_VENUES = {
         "lon": -82.3253,
         "website": "https://thewooly.com/",
         "category": "Arts"
+    },
+    "Tioga Town Center": {
+        "address": "13085 SW 1st Lane, Newberry, FL 32669",
+        "lat": 29.6493,
+        "lon": -82.4725,
+        "website": "https://www.tiogatowncenter.com/",
+        "category": "Other"
+    },
+    "High Springs Playhouse": {
+        "address": "23414 W US Hwy 27, High Springs, FL 32643",
+        "lat": 29.8275,
+        "lon": -82.5955,
+        "website": "https://highspringplayhouse.com/",
+        "category": "Arts"
+    },
+    "Gainesville Community Playhouse": {
+        "address": "1900 NE 16th Ave, Gainesville, FL 32609",
+        "lat": 29.6661,
+        "lon": -82.3025,
+        "website": "https://gcplayhouse.org/",
+        "category": "Arts"
+    },
+    "Acrosstown Repertory Theatre": {
+        "address": "3501 SW 2nd Ave, Gainesville, FL 32607",
+        "lat": 29.6508,
+        "lon": -82.3745,
+        "website": "https://acrosstown.org/",
+        "category": "Arts"
+    },
+    "Loosey's": {
+        "address": "120 SW 1st Ave, Gainesville, FL 32601",
+        "lat": 29.6510,
+        "lon": -82.3255,
+        "website": "https://looseys.com/",
+        "category": "Music"
+    },
+    "The Atlantic": {
+        "address": "15 N Main St, Gainesville, FL 32601",
+        "lat": 29.6515,
+        "lon": -82.3248,
+        "website": "https://theatlanticgainesville.com/",
+        "category": "Music"
+    },
+    "Signal": {
+        "address": "104 S Main St, Gainesville, FL 32601",
+        "lat": 29.6505,
+        "lon": -82.3248,
+        "website": "https://signalgainesville.com/",
+        "category": "Music"
+    },
+    "Rosa B. Williams Center": {
+        "address": "524 NW 1st St, Gainesville, FL 32601",
+        "lat": 29.6559,
+        "lon": -82.3255,
+        "website": "https://www.gainesvillefl.gov/Parks-Conservation-Recreation/Rosa-B-Williams-Center",
+        "category": "Arts"
+    },
+    "High Springs Brewing Company": {
+        "address": "18562 NW 237th St, High Springs, FL 32643",
+        "lat": 29.8268,
+        "lon": -82.5965,
+        "website": "https://highspringsbrewing.com/",
+        "category": "Brewery"
+    },
+    "Swamp Head Brewery": {
+        "address": "3650 SW 42nd Ave, Gainesville, FL 32608",
+        "lat": 29.6198,
+        "lon": -82.3780,
+        "website": "https://swamphead.com/",
+        "category": "Brewery"
+    },
+    "Blackadder Brewing Company": {
+        "address": "618 NW 60th St, Gainesville, FL 32607",
+        "lat": 29.6582,
+        "lon": -82.4082,
+        "website": "https://www.blackadderbrewing.com/",
+        "category": "Brewery"
+    },
+    "Civic Media Center": {
+        "address": "433 S Main St, Gainesville, FL 32601",
+        "lat": 29.6474,
+        "lon": -82.3248,
+        "website": "https://www.civicmediacenter.org/",
+        "category": "Library"
+    },
+    "Donald R. Dizney Stadium": {
+        "address": "2580 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6366,
+        "lon": -82.3725,
+        "website": "https://floridagators.com/facilities/donald-r-dizney-stadium/7",
+        "category": "Sports"
+    },
+    "4th Ave Food Park": {
+        "address": "409 SW 4th Ave, Gainesville, FL 32601",
+        "lat": 29.6481,
+        "lon": -82.3292,
+        "website": "https://4thavefoodpark.com/",
+        "category": "Other"
+    },
+    "Baby J's Bar": {
+        "address": "7 W University Ave, Gainesville, FL 32601",
+        "lat": 29.6515,
+        "lon": -82.3252,
+        "website": "https://babyjsbar.com/",
+        "category": "Music"
+    },
+    "The Bull": {
+        "address": "18 SW 1st Ave, Gainesville, FL 32601",
+        "lat": 29.6511,
+        "lon": -82.3249,
+        "website": "https://thebullgainesville.com/",
+        "category": "Music"
+    },
+    "Skinner Park": {
+        "address": "NW Skinner Ter, Alachua, FL 32615",
+        "lat": 29.7745,
+        "lon": -82.4785,
+        "website": "https://www.cityofalachua.com/",
+        "category": "Park"
+    },
+    "Aloft Hotel Gainesville": {
+        "address": "3743 Hull Rd, Gainesville, FL 32607",
+        "lat": 29.6385,
+        "lon": -82.3792,
+        "website": "https://www.marriott.com/en-us/hotels/gnval-aloft-gainesville-university-area/",
+        "category": "Other"
     }
 }
 
-# Note: Streamlit's @st.cache_data tries to hash input parameters.
-# Passing a NumPy array (like df["name"].unique()) can throw UnhashableParamError in some Streamlit environments.
-# Converting the parameter to a standard Python tuple or loading it inside avoids caching issues.
+def parse_ics_datetime(dt_str):
+    try:
+        clean_str = dt_str.replace("T", "").replace("Z", "")
+        if len(clean_str) >= 14:
+            return datetime.datetime.strptime(clean_str[:14], "%Y%m%d%H%M%S")
+        elif len(clean_str) >= 8:
+            return datetime.datetime.strptime(clean_str[:8], "%Y%m%d")
+    except Exception:
+        pass
+    return None
+
+def format_time_range(start_dt, end_dt):
+    if not start_dt:
+        return "All Day"
+
+    local_start = start_dt - datetime.timedelta(hours=4)
+    start_str = local_start.strftime("%-I:%M %p")
+
+    if end_dt:
+        local_end = end_dt - datetime.timedelta(hours=4)
+        end_str = local_end.strftime("%-I:%M %p")
+        return f"{start_str} – {end_str}"
+
+    return start_str
+
 @st.cache_data
-def generate_mock_events(venue_names_tuple, today_str):
-    import datetime
-    random.seed(42)  # For consistent results
-    events = {}
+def load_real_events(today_str):
+    import requests
+    url = "https://gainesvilleevents.com/feed.ics"
+    try:
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        content = response.text
+    except Exception as e:
+        st.error(f"Error fetching live event feed: {e}")
+        return []
 
-    base_date = datetime.date.fromisoformat(today_str)
-    today_weekday = base_date.weekday()  # Monday=0, Sunday=6
+    events = []
+    current_event = {}
+    in_vevent = False
 
-    for name in venue_names_tuple:
-        # Determine categories pool based on name context to ensure accurate content mapping
-        if "gators" in name.lower() or "sports" in name.lower():
-            categories_pool = ["Sports"]
+    lines = []
+    for line in content.splitlines():
+        if line.startswith(" ") and lines:
+            lines[-1] += line[1:]
         else:
-            categories_pool = ["Music", "Theater", "Family", "Outdoor", "Food & Drink", "Community"]
+            lines.append(line)
 
-        num_events = random.randint(1, 15)
-        venue_events = []
+    for line in lines:
+        if line.startswith("BEGIN:VEVENT"):
+            current_event = {}
+            in_vevent = True
+        elif line.startswith("END:VEVENT"):
+            if in_vevent:
+                events.append(current_event)
+            in_vevent = False
+        elif in_vevent:
+            if ":" in line:
+                key, val = line.split(":", 1)
+                if ";" in key:
+                    key = key.split(";", 1)[0]
+                current_event[key] = val
 
-        # Check if the source name represents one of our known physical venues
-        source_is_physical = False
-        physical_key = None
-        for key in PHYSICAL_VENUES:
-            if key.lower() in name.lower() or name.lower() in key.lower():
-                source_is_physical = True
-                physical_key = key
+    parsed_events = []
+    base_date = datetime.date.fromisoformat(today_str)
+
+    for ev in events:
+        summary = ev.get("SUMMARY", "").replace("\\,", ",").replace("\\;", ";").strip()
+        location = ev.get("LOCATION", "").replace("\\,", ",").replace("\\;", ";").strip()
+        description = ev.get("DESCRIPTION", "").replace("\\,", ",").replace("\\;", ";").strip()
+        url = ev.get("URL", "").strip()
+
+        dtstart_str = ev.get("DTSTART", "")
+        dtstart = parse_ics_datetime(dtstart_str)
+        if not dtstart:
+            continue
+
+        dtend_str = ev.get("DTEND", "")
+        dtend = parse_ics_datetime(dtend_str)
+
+        local_dtstart = dtstart - datetime.timedelta(hours=4)
+        event_date = local_dtstart.date()
+
+        days_away = (event_date - base_date).days
+        if days_away < 0:
+            continue
+
+        event_date_str = event_date.strftime("%A, %B %d, %Y")
+
+        if days_away == 0:
+            timeframe = "Today"
+        elif event_date.weekday() in [4, 5, 6] and days_away <= (6 - base_date.weekday()):
+            timeframe = "This Weekend"
+        elif days_away <= 7:
+            timeframe = "Next 7 Days"
+        else:
+            timeframe = "Later"
+
+        time_range = format_time_range(dtstart, dtend)
+
+        tag = "Other"
+        description_lower = description.lower()
+        summary_lower = summary.lower()
+
+        if "music" in description_lower or "music" in summary_lower or "concert" in description_lower or "show" in description_lower or "band" in description_lower or "sing" in description_lower:
+            tag = "Music"
+        elif "art" in description_lower or "theatre" in description_lower or "theater" in description_lower or "dance" in description_lower or "comedy" in description_lower:
+            tag = "Arts"
+        elif "museum" in description_lower or "exhibit" in description_lower:
+            tag = "Museum"
+        elif "library" in description_lower or "book" in description_lower or "story" in description_lower or "read" in description_lower:
+            tag = "Library"
+        elif "park" in description_lower or "walk" in description_lower or "outdoors" in description_lower or "nature" in description_lower:
+            tag = "Park"
+        elif "sports" in description_lower or "gators" in description_lower or "game" in description_lower or "pickleball" in description_lower:
+            tag = "Sports"
+        elif "university" in description_lower or "college" in description_lower or "campus" in description_lower:
+            tag = "University"
+        elif "brewery" in description_lower or "beer" in description_lower or "pub" in description_lower:
+            tag = "Brewery"
+
+        cost = "FREE"
+        if "$" in description:
+            prices = re.findall(r"\$\d+", description)
+            if prices:
+                cost = prices[0]
+            else:
+                cost = "PAID"
+
+        event_venue_name = "General Gainesville"
+        event_lat = 29.6516
+        event_lon = -82.3248
+        event_address = "Gainesville, FL"
+
+        matched_venue_key = None
+        for key in PHYSICAL_VENUES.keys():
+            if key.lower() in location.lower() or location.lower() in key.lower():
+                matched_venue_key = key
                 break
 
-        for i in range(num_events):
-            days_away = random.randint(0, 10)
+        if not matched_venue_key:
+            loc_lower = location.lower()
+            if "alachua branch" in loc_lower or "alachua library" in loc_lower:
+                matched_venue_key = "Alachua Branch"
+            elif "archer branch" in loc_lower or "archer library" in loc_lower:
+                matched_venue_key = "Archer Branch"
+            elif "cone park" in loc_lower:
+                matched_venue_key = "Cone Park Branch"
+            elif "hawthorne branch" in loc_lower or "hawthorne library" in loc_lower:
+                matched_venue_key = "Hawthorne Branch"
+            elif "high springs branch" in loc_lower or "high springs library" in loc_lower:
+                matched_venue_key = "High Springs Branch"
+            elif "library partnership" in loc_lower:
+                matched_venue_key = "Library Partnership Branch"
+            elif "micanopy branch" in loc_lower or "micanopy library" in loc_lower:
+                matched_venue_key = "Micanopy Branch"
+            elif "millhopper branch" in loc_lower or "millhopper library" in loc_lower:
+                matched_venue_key = "Millhopper Branch"
+            elif "newberry branch" in loc_lower or "newberry library" in loc_lower:
+                matched_venue_key = "Newberry Branch"
+            elif "tower road branch" in loc_lower or "tower road library" in loc_lower:
+                matched_venue_key = "Tower Road Branch"
+            elif "waldo branch" in loc_lower or "waldo library" in loc_lower:
+                matched_venue_key = "Waldo Branch"
+            elif "headquarters" in loc_lower or "hq library" in loc_lower:
+                matched_venue_key = "Headquarters Library"
+            elif "dizney stadium" in loc_lower:
+                matched_venue_key = "Donald R. Dizney Stadium"
+            elif "o'connell" in loc_lower or "oconnell" in loc_lower:
+                matched_venue_key = "Stephen C. O'Connell Center"
+            elif "ben hill griffin" in loc_lower or "griffin stadium" in loc_lower:
+                matched_venue_key = "Ben Hill Griffin Stadium"
+            elif "wool" in loc_lower:
+                matched_venue_key = "The Wooly"
+            elif "plaza" in loc_lower:
+                matched_venue_key = "Bo Diddley Plaza"
+            elif "hippodrome" in loc_lower:
+                matched_venue_key = "Hippodrome Theatre"
+            elif "cade" in loc_lower:
+                matched_venue_key = "Cade Museum"
+            elif "museum of natural history" in loc_lower:
+                matched_venue_key = "Florida Museum of Natural History"
+            elif "harn" in loc_lower:
+                matched_venue_key = "Harn Museum of Art"
+            elif "performing arts" in loc_lower:
+                matched_venue_key = "UF Performing Arts"
+            elif "depot park" in loc_lower:
+                matched_venue_key = "Depot Park"
+            elif "heartwood" in loc_lower:
+                matched_venue_key = "Heartwood Soundstage"
+            elif "high dive" in loc_lower:
+                matched_venue_key = "High Dive"
+            elif "celebration" in loc_lower:
+                matched_venue_key = "Celebration Pointe"
+            elif "santa fe" in loc_lower or "sf college" in loc_lower:
+                matched_venue_key = "Santa Fe College"
+            elif "tioga" in loc_lower:
+                matched_venue_key = "Tioga Town Center"
+            elif "first magnitude" in loc_lower:
+                matched_venue_key = "First Magnitude Brewing Company"
+            elif "cypress & grove" in loc_lower:
+                matched_venue_key = "Cypress & Grove Brewing Co."
+            elif "blackadder" in loc_lower:
+                matched_venue_key = "Blackadder Brewing Company"
+            elif "swamp head" in loc_lower:
+                matched_venue_key = "Swamp Head Brewery"
+            elif "civic media" in loc_lower:
+                matched_venue_key = "Civic Media Center"
+            elif "loosey" in loc_lower:
+                matched_venue_key = "Loosey's"
+            elif "atlantic" in loc_lower:
+                matched_venue_key = "The Atlantic"
+            elif "signal" in loc_lower:
+                matched_venue_key = "Signal"
+            elif "rosa b." in loc_lower:
+                matched_venue_key = "Rosa B. Williams Center"
 
-            # Generate a specific date based on days_away relative to actual dynamic base_date
-            event_date = base_date + datetime.timedelta(days=days_away)
-            event_date_str = event_date.strftime("%A, %B %d, %Y")
+        if matched_venue_key:
+            v_info = PHYSICAL_VENUES[matched_venue_key]
+            event_venue_name = matched_venue_key
+            event_lat = v_info["lat"]
+            event_lon = v_info["lon"]
+            event_address = v_info["address"]
+        else:
+            event_venue_name = location if location else "Other Location"
+            event_lat = 29.6516
+            event_lon = -82.3248
+            event_address = location if location else "Gainesville, FL"
 
-            # Categorize timeframe dynamically and correctly
-            if days_away == 0:
-                timeframe = "Today"
-            elif event_date.weekday() in [4, 5, 6] and days_away <= (6 - today_weekday):
-                timeframe = "This Weekend"
-            elif days_away <= 7:
-                timeframe = "Next 7 Days"
-            else:
-                timeframe = "Later"
+        source_name = "Visit Gainesville"
+        uid = ev.get("UID", "").lower()
+        if "aclibrary" in uid or "library" in description_lower:
+            source_name = "Alachua County Library District"
+        elif "cademuseum" in uid:
+            source_name = "Cade Museum"
+        elif "floridamuseum" in uid:
+            source_name = "Florida Museum of Natural History"
+        elif "gainesvilleshows" in uid:
+            source_name = "GainesvilleShows.com"
+        elif "harn" in uid:
+            source_name = "Harn Museum of Art"
+        elif "heartwood" in uid:
+            source_name = "Heartwood Soundstage"
+        elif "hippodrome" in uid:
+            source_name = "Hippodrome Theatre"
+        elif "tioga" in uid:
+            source_name = "Tioga Town Center"
+        elif "visitgainesville" in uid:
+            source_name = "Visit Gainesville"
+        elif "floridagators" in uid:
+            source_name = "Florida Gators"
+        elif "santafecollege" in uid:
+            source_name = "Santa Fe College"
+        elif "depotpark" in uid:
+            source_name = "Depot Park"
 
-            tag = random.choice(categories_pool)
+        parsed_events.append({
+            "title": summary,
+            "tag": tag,
+            "timeframe": timeframe,
+            "days_away": days_away,
+            "date_str": event_date_str,
+            "time_range": time_range,
+            "cost": cost,
+            "event_venue": event_venue_name,
+            "event_lat": event_lat,
+            "event_lon": event_lon,
+            "event_address": event_address,
+            "source_name": source_name,
+            "description": description if description else f"Join us at {event_address} for this event!",
+            "website": url
+        })
 
-            # Generate a time range
-            start_hour = random.choice([8, 9, 10, 11, 12, 1, 2, 4, 6, 7, 8])
-            start_min = random.choice(["00", "30"])
-            meridiem = "AM" if start_hour in [8, 9, 10, 11] or start_hour == 12 else "PM"
+    return parsed_events
 
-            end_hour = (start_hour + random.choice([1, 2, 3])) % 12
-            if end_hour == 0:
-                end_hour = 12
-            end_min = random.choice(["00", "30"])
-            end_meridiem = "PM" if start_hour in [12, 1, 2, 4, 6, 7, 8] or (start_hour in [8, 9, 10, 11] and (start_hour + 3) >= 12) else "AM"
-
-            time_range = f"{start_hour}:{start_min} {meridiem} – {end_hour}:{end_min} {end_meridiem}"
-
-            cost = random.choice(["FREE", "FREE", "$5", "$10", "FREE"])
-
-            # Specific titles per tag
-            titles = {
-                "Music": ["Acoustic Evening Concert", "Live Local Bands Showcase", "Jazz under the Stars", "Indie Rock Showcase"],
-                "Theater": ["Comedy Night Live", "Shakespeare in the Park", "Improv Workshop", "Broadway Classics Concert"],
-                "Family": ["Open Gym & Family Play", "Kids Storytime & Crafts", "Family Fun Festival", "Science Saturday Exploration"],
-                "Outdoor": ["Guided Nature Walk", "Community Morning Yoga", "Sunset Bicycle Tour", "Farmer's Market & Crafts"],
-                "Food & Drink": ["Trivia & Craft Beer Night", "Local Food Truck Rally", "Wine & Cheese Tasting", "Home Brewing Masterclass"],
-                "Community": ["Town Hall Forum", "Community Volunteer Cleanup", "Local Artisan Fair", "Gainesville Tech Meetup"],
-                "Sports": ["Gators Football Game", "Gators Basketball Game", "Gators Gymnastics Meet", "Gators Baseball Game"]
-            }
-            title_pool = titles.get(tag, ["Exciting Gathering"])
-            title = f"{random.choice(title_pool)}"
-
-            # Dynamically align content with the actual date and time
-            actual_weekday_name = event_date.strftime("%A")
-            title = title.replace("Saturday", actual_weekday_name)
-            title = title.replace("Sunday", actual_weekday_name)
-            title = title.replace("Monday", actual_weekday_name)
-            title = title.replace("Tuesday", actual_weekday_name)
-            title = title.replace("Wednesday", actual_weekday_name)
-            title = title.replace("Thursday", actual_weekday_name)
-            title = title.replace("Friday", actual_weekday_name)
-
-            if meridiem == "PM" and "Morning" in title:
-                title = title.replace("Morning", "Afternoon" if start_hour in [12, 1, 2, 3, 4] else "Evening")
-
-            # Determine coordinates and address of the physical event host
-            event_venue_name = None
-            event_lat = None
-            event_lon = None
-            event_address = None
-
-            # Deeper context location resolution based on event title keywords
-            title_location_mapping = {
-                "Shakespeare in the Park": "Reitz Union Lawn",
-                "Gators Football Game": "Ben Hill Griffin Stadium",
-                "Gators Basketball Game": "Stephen C. O'Connell Center",
-                "Gators Gymnastics Meet": "Stephen C. O'Connell Center",
-                "Gators Baseball Game": "Stephen C. O'Connell Center",
-                "Guided Nature Walk": "Sweetwater Wetlands Park",
-                "Sunset Bicycle Tour": "Sweetwater Wetlands Park",
-                "Comedy Night Live": "The Wooly",
-                "Improv Workshop": "The Wooly",
-                "Jazz under the Stars": "Bo Diddley Plaza",
-                "Farmer's Market & Crafts": "Bo Diddley Plaza"
-            }
-
-            for kw, target_venue in title_location_mapping.items():
-                if kw in title:
-                    if target_venue in PHYSICAL_VENUES:
-                        event_venue_name = target_venue
-                        event_lat = PHYSICAL_VENUES[target_venue]["lat"]
-                        event_lon = PHYSICAL_VENUES[target_venue]["lon"]
-                        event_address = PHYSICAL_VENUES[target_venue]["address"]
-                        break
-
-            # Fallback to source physical mapping or random allocation
-            if not event_venue_name:
-                if source_is_physical:
-                    event_venue_name = physical_key
-                    event_lat = PHYSICAL_VENUES[physical_key]["lat"]
-                    event_lon = PHYSICAL_VENUES[physical_key]["lon"]
-                    event_address = PHYSICAL_VENUES[physical_key]["address"]
-                else:
-                    # Choose from all physical venues randomly for online/media source events
-                    chosen_key = random.choice(list(PHYSICAL_VENUES.keys()))
-                    event_venue_name = chosen_key
-                    event_lat = PHYSICAL_VENUES[chosen_key]["lat"]
-                    event_lon = PHYSICAL_VENUES[chosen_key]["lon"]
-                    event_address = PHYSICAL_VENUES[chosen_key]["address"]
-
-            venue_events.append({
-                "title": title,
-                "tag": tag.upper(),
-                "timeframe": timeframe,
-                "days_away": days_away,
-                "date_str": event_date_str,
-                "time_range": time_range,
-                "cost": cost,
-                "event_venue": event_venue_name,
-                "event_lat": event_lat,
-                "event_lon": event_lon,
-                "event_address": event_address,
-                "source_name": name,
-                "description": f"Join us at {event_venue_name} for this incredible {tag.lower()} experience!"
-            })
-        # Sort by days away
-        venue_events.sort(key=lambda x: x["days_away"])
-        events[name] = venue_events
-    return events
-
-# Ensure we pass a standard Python tuple of strings, which is fully hashable by Streamlit
-import datetime
+# Ensure we pass today's date dynamically
 today_str = datetime.date.today().isoformat()
-mock_events = generate_mock_events(tuple(df["name"].unique()), today_str)
+active_raw_events = load_real_events(today_str)
 
 # --- Sidebar Controls ---
 st.sidebar.header("Filter & Settings")
 
-# 1. Search Bar (Search by venue name or event title)
+# 1. Search Bar
 search_query = st.sidebar.text_input("🔍 Search (Venue/Event)", "")
 
 # 2. Category Selection
-categories = sorted(df["category"].dropna().unique())
+categories = sorted(list(colors_mapping.keys()))
 selected_categories = st.sidebar.multiselect(
     "📂 Venue Categories",
     categories,
     default=categories
 )
 
-# 3. Time Slider (All, Next 7 Days, This Weekend, Today)
+# 3. Time Slider
 time_filter = st.sidebar.select_slider(
     "📅 Event Time Horizon",
     options=["All", "Next 7 Days", "This Weekend", "Today"]
 )
 
-# 4. Map View Toggle (Marker Cluster vs Heatmap)
+# 4. Map View Toggle
 map_view_type = st.sidebar.radio(
     "🗺️ Map View Mode",
     ["Standard Pin Cluster", "Density Heatmap"]
@@ -452,55 +768,50 @@ legend_html += '<div style="margin-top: 10px; border-top: 1px solid #E5E7EB; pad
 st.sidebar.markdown(legend_html, unsafe_allow_html=True)
 
 # --- Filter Logic ---
-# Gather all mock events across all sources and filter them dynamically
 active_events = []
-for source_name, events in mock_events.items():
-    source_row = df[df["name"] == source_name]
-    source_category = source_row.iloc[0]["category"] if not source_row.empty else "Other"
+for ev in active_raw_events:
+    phys_venue_name = ev["event_venue"]
+    phys_venue_info = PHYSICAL_VENUES.get(phys_venue_name, {
+        "category": "Other",
+        "lat": ev["event_lat"],
+        "lon": ev["event_lon"]
+    })
+    phys_venue_cat = phys_venue_info.get("category", "Other")
 
-    for ev in events:
-        phys_venue_name = ev["event_venue"]
-        phys_venue_info = PHYSICAL_VENUES.get(phys_venue_name, {})
-        phys_venue_cat = phys_venue_info.get("category", "Other")
+    # 1. Category Filter
+    if phys_venue_cat not in selected_categories:
+        continue
 
-        # 1. Category Filter
-        if phys_venue_cat not in selected_categories:
+    # 2. Search Query Filter
+    if search_query:
+        query = search_query.lower()
+        match_venue = query in phys_venue_name.lower()
+        match_title = query in ev["title"].lower()
+        match_source = query in ev["source_name"].lower()
+        if not (match_venue or match_title or match_source):
             continue
 
-        # 2. Search Query Filter
-        if search_query:
-            query = search_query.lower()
-            match_venue = query in phys_venue_name.lower()
-            match_title = query in ev["title"].lower()
-            match_source = query in source_name.lower()
-            if not (match_venue or match_title or match_source):
-                continue
+    # 3. Time Filter
+    if time_filter != "All":
+        if time_filter == "Today" and ev["timeframe"] != "Today":
+            continue
+        elif time_filter == "This Weekend" and ev["timeframe"] not in ["Today", "This Weekend"]:
+            continue
+        elif time_filter == "Next 7 Days" and ev["timeframe"] not in ["Today", "This Weekend", "Next 7 Days"]:
+            continue
 
-        # 3. Time Filter
-        if time_filter != "All":
-            if time_filter == "Today" and ev["timeframe"] != "Today":
-                continue
-            elif time_filter == "This Weekend" and ev["timeframe"] not in ["Today", "This Weekend"]:
-                continue
-            elif time_filter == "Next 7 Days" and ev["timeframe"] not in ["Today", "This Weekend", "Next 7 Days"]:
-                continue
+    # 4. Near Me Filter
+    if near_me_enabled:
+        dist = ((ev["event_lat"] - user_lat)**2 + (ev["event_lon"] - user_lon)**2)**0.5
+        if dist > 0.036:
+            continue
 
-        # 4. Near Me Filter
-        if near_me_enabled:
-            # 0.036 degrees is roughly 2.5 miles
-            dist = ((ev["event_lat"] - user_lat)**2 + (ev["event_lon"] - user_lon)**2)**0.5
-            if dist > 0.036:
-                continue
-
-        # If we got here, the event is active!
-        ev_copy = ev.copy()
-        ev_copy["source_name"] = source_name
-        active_events.append(ev_copy)
+    active_events.append(ev)
 
 # Sort all active events chronologically by days_away
 active_events.sort(key=lambda x: x["days_away"])
 
-# Group active events by their physical hosting venue
+# Group active events by physical venue
 events_by_physical_venue = {}
 for ev in active_events:
     venue_name = ev["event_venue"]
@@ -508,13 +819,13 @@ for ev in active_events:
         events_by_physical_venue[venue_name] = []
     events_by_physical_venue[venue_name].append(ev)
 
-# Create a summary of active physical venues for metrics and drop-downs
+# Create summary of active venues
 active_venues_data = []
 for name, v_events in events_by_physical_venue.items():
     v_info = PHYSICAL_VENUES.get(name, {
-        "address": "Gainesville, FL",
-        "lat": 29.6516,
-        "lon": -82.3248,
+        "address": v_events[0]["event_address"],
+        "lat": v_events[0]["event_lat"],
+        "lon": v_events[0]["event_lon"],
         "website": "https://gainesvilleevents.com/",
         "category": "Other"
     })
@@ -525,11 +836,11 @@ for name, v_events in events_by_physical_venue.items():
         "lon": v_info["lon"],
         "website": v_info["website"],
         "address": v_info["address"],
-        "description": f"Physical hosting venue located at {v_info['address']}."
+        "description": f"Venue located at {v_info['address']}."
     })
 filtered = pd.DataFrame(active_venues_data) if active_venues_data else pd.DataFrame(columns=["name", "category", "lat", "lon", "website", "address", "description"])
 
-# --- Initialize Session State for Active Venue (st_folium hook integration) ---
+# --- Initialize Session State for Active Venue ---
 if "selected_venue" not in st.session_state:
     active_physical_venue_names = sorted(list(events_by_physical_venue.keys())) if events_by_physical_venue else sorted(list(PHYSICAL_VENUES.keys()))
     st.session_state["selected_venue"] = active_physical_venue_names[0]
@@ -546,14 +857,12 @@ with col3:
     st.metric("Active Categories", len(filtered["category"].unique()) if len(filtered) > 0 else 0)
 
 # --- Build Folium Map ---
-# Base location for Map: center of Gainesville
 m = folium.Map(
     location=[29.6516, -82.3248],
     zoom_start=13,
     tiles="CartoDB positron"
 )
 
-# User "Near Me" simulation pinpoint
 if near_me_enabled:
     folium.Marker(
         [user_lat, user_lon],
@@ -562,7 +871,6 @@ if near_me_enabled:
         icon=folium.Icon(color="red", icon="user", prefix="fa")
     ).add_to(m)
 
-# Apply Map rendering mode
 if map_view_type == "Standard Pin Cluster":
     cluster = MarkerCluster().add_to(m)
     for _, row in filtered.iterrows():
@@ -578,16 +886,26 @@ if map_view_type == "Standard Pin Cluster":
         unique_events_count = len(set((ev["title"].lower().strip(), ev["date_str"]) for ev in v_events))
         emoji = emojis_mapping.get(cat, "📍")
 
-        # Directions link to Google Maps
         directions_url = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
-
         desc_html = f'<p style="font-size: 0.85rem; color: #4B5563; margin: 8px 0 4px 0;"><i>{desc}</i></p>'
 
         events_html = ""
         if v_events:
             events_html += '<div style="border-top: 1px solid #E5E7EB; margin-top: 10px; padding-top: 10px; font-family: \'Helvetica Neue\', Arial, sans-serif; line-height: 1.4; max-height: 180px; overflow-y: auto;">'
             events_html += f'<div style="font-weight: bold; font-size: 0.9rem; color: #374151; margin-bottom: 6px;">Upcoming Events ({unique_events_count}):</div>'
-            for ev in v_events[:3]:
+
+            # De-duplicate for card presentation
+            seen_events = set()
+            presented_count = 0
+            for ev in v_events:
+                ev_key = (ev['title'].lower().strip(), ev['date_str'])
+                if ev_key in seen_events:
+                    continue
+                seen_events.add(ev_key)
+                presented_count += 1
+                if presented_count > 3:
+                    continue
+
                 events_html += f"""
                 <div style="margin-bottom: 8px; border-bottom: 1px dashed #F3F4F6; padding-bottom: 6px;">
                     <div style="font-weight: bold; font-size: 0.85rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
@@ -596,8 +914,8 @@ if map_view_type == "Standard Pin Cluster":
                     <div style="color: #2563EB; font-size: 0.75rem;">Source: {ev['source_name']}</div>
                 </div>
                 """
-            if len(v_events) > 3:
-                events_html += f'<div style="font-size: 0.75rem; color: #6B7280; text-align: center;">+ {len(v_events) - 3} more events (see below)</div>'
+            if unique_events_count > 3:
+                events_html += f'<div style="font-size: 0.75rem; color: #6B7280; text-align: center;">+ {unique_events_count - 3} more events (see below)</div>'
             events_html += '</div>'
 
         popup_html = f"""
@@ -615,12 +933,11 @@ if map_view_type == "Standard Pin Cluster":
 
         tooltip_text = f"{name} ({unique_events_count} active events)" if v_events else name
 
-        # Check if any event is scheduled for Today
         has_today = any(ev["timeframe"] == "Today" for ev in v_events)
         glow_class = "glow-active" if has_today else ""
         border_style = "border: 2px solid #FFFFFF;"
         if has_today:
-            border_style = "border: 2.5px solid #FF3B30;" # Bright red accent border for today's events
+            border_style = "border: 2.5px solid #FF3B30;"
 
         marker_color = colors_mapping.get(cat, "#4B5563")
         event_count = unique_events_count
@@ -656,7 +973,6 @@ if map_view_type == "Standard Pin Cluster":
             )
         ).add_to(cluster)
 else:
-    # Heatmap mode
     heat_data = []
     for _, row in filtered.iterrows():
         name = row["name"]
@@ -665,7 +981,6 @@ else:
     if heat_data:
         HeatMap(heat_data, radius=25, blur=15).add_to(m)
 
-# Render map in Streamlit and capture interactive st_folium return hook
 map_data = st_folium(
     m,
     use_container_width=True,
@@ -673,14 +988,11 @@ map_data = st_folium(
     key="gainesville_map"
 )
 
-# --- Bidirectional Streamlit Event Hook / Click Handler ---
-# When a marker is clicked on standard map view, update the session_state selected_venue!
+# --- Click Handler ---
 if map_data and map_data.get("last_object_clicked_tooltip"):
     clicked_venue = map_data["last_object_clicked_tooltip"]
-    # Extract name if it contains count details, e.g., "Bo Diddley Plaza (2 active events)"
     if " (" in clicked_venue and clicked_venue.endswith(" active events)"):
         clicked_venue = clicked_venue.split(" (")[0]
-    # Check if clicked venue exists in current filter set
     if clicked_venue in filtered["name"].values:
         st.session_state["selected_venue"] = clicked_venue
 
@@ -691,19 +1003,27 @@ st.subheader("🗓️ Venue Explorer & Full Schedule")
 if len(filtered) == 0:
     st.warning("No physical venues found matching the current filters.")
 else:
-    # Tabbed interface
     tab1, tab2 = st.tabs(["📅 Full Schedule (All Selected Venues)", "📍 Individual Venue Explorer"])
 
     with tab1:
-        st.markdown(f"**Showing all {len(active_events)} events across all {len(filtered)} active physical venues matching the \"{time_filter}\" horizon.**")
+        st.markdown(f"**Showing all {unique_active_events_count} unique events across all {len(filtered)} active physical venues matching the \"{time_filter}\" horizon.**")
         if not active_events:
             st.info("No events scheduled across any of the selected venues in this time horizon.")
         else:
+            # Chronological sorted unique list presentation
+            seen_events = set()
             for ev in active_events:
+                ev_key = (ev['title'].lower().strip(), ev['date_str'], ev['event_venue'])
+                if ev_key in seen_events:
+                    continue
+                seen_events.add(ev_key)
+
                 ev_directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
+                event_website = ev.get("website", "https://gainesvilleevents.com")
+
                 st.markdown(f"""
                 <div style="background-color: #F9FAFB; border-left: 4px solid #1E3A8A; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
-                    <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
+                    <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;"><a href="{event_website}" target="_blank" style="text-decoration: none; color: #1F2937;">{ev['title']}</a></div>
                     <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
                     <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <a href="{ev_directions_url}" target="_blank" style="color: #059669; text-decoration: none;">🚗 Directions to Event Venue</a></div>
                     <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
@@ -712,14 +1032,12 @@ else:
                 """, unsafe_allow_html=True)
 
     with tab2:
-        # Ensure current state venue is valid with current filters, else fallback
         venue_list = sorted(filtered["name"].unique()) if not filtered.empty else sorted(list(PHYSICAL_VENUES.keys()))
         current_selected = st.session_state["selected_venue"]
         if current_selected not in venue_list:
             current_selected = venue_list[0]
             st.session_state["selected_venue"] = current_selected
 
-        # Interactive dropdown to manually change venue or view updated state hook selection
         selected_venue_idx = venue_list.index(current_selected)
 
         selected_venue_name = st.selectbox(
@@ -728,7 +1046,6 @@ else:
             index=selected_venue_idx,
             key="venue_selectbox"
         )
-        # Save manually updated option back to state
         st.session_state["selected_venue"] = selected_venue_name
 
         venue_data = filtered[filtered["name"] == selected_venue_name].iloc[0] if not filtered.empty and selected_venue_name in filtered["name"].values else None
@@ -749,11 +1066,19 @@ else:
                 if not venue_events:
                     st.write("No events scheduled for this venue in the selected time horizon.")
                 else:
+                    seen_venue_events = set()
                     for ev in venue_events:
+                        ev_key = (ev['title'].lower().strip(), ev['date_str'])
+                        if ev_key in seen_venue_events:
+                            continue
+                        seen_venue_events.add(ev_key)
+
                         ev_directions_url = f"https://www.google.com/maps/dir/?api=1&destination={ev['event_lat']},{ev['event_lon']}"
+                        event_website = ev.get("website", "https://gainesvilleevents.com")
+
                         st.markdown(f"""
                         <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.5;">
-                            <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;">{ev['title']}</div>
+                            <div style="font-weight: bold; font-size: 1.05rem; color: #1F2937; margin-bottom: 2px;"><a href="{event_website}" target="_blank" style="text-decoration: none; color: #1F2937;">{ev['title']}</a></div>
                             <div style="color: #4B5563; font-size: 0.9rem; margin-bottom: 4px;">{ev['date_str']}, {ev['time_range']} · <b>{ev['event_venue']}</b></div>
                             <div style="color: #4B5563; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 2px;">{ev['tag']} · <a href="{ev_directions_url}" target="_blank" style="color: #3B82F6; text-decoration: none;">🚗 Directions to Event Venue</a></div>
                             <div style="color: #059669; font-weight: bold; font-size: 0.8rem; margin-bottom: 2px;">{ev['cost']}</div>
