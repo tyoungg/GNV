@@ -744,6 +744,13 @@ map_view_type = st.sidebar.radio(
     ["Standard Pin Cluster", "Density Heatmap"]
 )
 
+# Basemap Style
+basemap_style = st.sidebar.selectbox(
+    "🌍 Basemap Style",
+    ["OpenStreetMap (Default)", "Esri Light Gray", "Esri World Street"],
+    index=0
+)
+
 # 5. Geolocation / "Near Me" Simulation
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Geolocation Simulation")
@@ -857,11 +864,27 @@ with col3:
     st.metric("Active Categories", len(filtered["category"].unique()) if len(filtered) > 0 else 0)
 
 # --- Build Folium Map ---
-m = folium.Map(
-    location=[29.6516, -82.3248],
-    zoom_start=13,
-    tiles="CartoDB positron"
-)
+# Configure free basemaps (CartoDB tiles now require an API key, so we use reliable free basemaps)
+if basemap_style == "Esri Light Gray":
+    m = folium.Map(
+        location=[29.6516, -82.3248],
+        zoom_start=13,
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        attr="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
+    )
+elif basemap_style == "Esri World Street":
+    m = folium.Map(
+        location=[29.6516, -82.3248],
+        zoom_start=13,
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        attr="Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, TomTom"
+    )
+else:
+    m = folium.Map(
+        location=[29.6516, -82.3248],
+        zoom_start=13,
+        tiles="OpenStreetMap"
+    )
 
 if near_me_enabled:
     folium.Marker(
