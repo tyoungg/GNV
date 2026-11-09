@@ -436,6 +436,335 @@ PHYSICAL_VENUES = {
         "lon": -82.3792,
         "website": "https://www.marriott.com/en-us/hotels/gnval-aloft-gainesville-university-area/",
         "category": "Other"
+    },
+    "Martin Luther King Jr. Community Center": {
+        "address": "25515 NW 6th Ave, Newberry, FL 32669",
+        "lat": 29.6520,
+        "lon": -82.6129,
+        "website": "https://www.ci.newberry.fl.us/",
+        "category": "Other"
+    },
+    "Easton Newberry Sports Complex": {
+        "address": "24880 NW 16th Ave, Newberry, FL 32669",
+        "lat": 29.6586,
+        "lon": -82.6033,
+        "website": "https://www.eastonnewberryarcherycenter.org/",
+        "category": "Sports"
+    },
+    "Alachua County Ag Auditorium": {
+        "address": "22716 W Newberry Rd, Newberry, FL 32669",
+        "lat": 29.6521,
+        "lon": -82.5732,
+        "website": "https://sfyl.ifas.ufl.edu/alachua/",
+        "category": "Other"
+    },
+    "Zip! at Haile Quarry": {
+        "address": "3975 NW County Road 235, Newberry, FL 32669",
+        "lat": 29.6874,
+        "lon": -82.5971,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Park"
+    },
+    "Matheson History Museum": {
+        "address": "513 E University Ave, Gainesville, FL 32601",
+        "lat": 29.6516,
+        "lon": -82.3203,
+        "website": "https://mathesonmuseum.org/",
+        "category": "Museum"
+    },
+    "The Historic Thomas Center": {
+        "address": "306 NE 6th Ave, Gainesville, FL 32601",
+        "lat": 29.6575,
+        "lon": -82.3228,
+        "website": "https://www.gainesvillefl.gov/Parks-Conservation-Recreation/Thomas-Center",
+        "category": "Arts"
+    },
+    "United Church of Gainesville": {
+        "address": "1624 NW 5th Ave, Gainesville, FL 32603",
+        "lat": 29.6561,
+        "lon": -82.3434,
+        "website": "https://ucgainesville.org/",
+        "category": "Other"
+    },
+    "First United Methodist Church": {
+        "address": "419 NE 1st St, Gainesville, FL 32601",
+        "lat": 29.6554,
+        "lon": -82.3253,
+        "website": "https://fumcgnv.org/",
+        "category": "Other"
+    },
+    "Trinity United Methodist Church": {
+        "address": "4000 NW 53rd Ave, Gainesville, FL 32653",
+        "lat": 29.7042,
+        "lon": -82.3872,
+        "website": "https://trinitygnv.org/",
+        "category": "Other"
+    },
+    "Grace Presbyterian Church": {
+        "address": "3146 NW 13th St, Gainesville, FL 32609",
+        "lat": 29.6820,
+        "lon": -82.3396,
+        "website": "https://gracedowntown.net/",
+        "category": "Other"
+    },
+    "Veterans Memorial Park": {
+        "address": "7400 SW 41st Pl, Gainesville, FL 32608",
+        "lat": 29.6158,
+        "lon": -82.4215,
+        "website": "https://www.alachuacounty.us/",
+        "category": "Park"
+    },
+    "Albert Ray Massey Park": {
+        "address": "1001 NW 34th St, Gainesville, FL 32605",
+        "lat": 29.6625,
+        "lon": -82.3732,
+        "website": "https://www.gainesvillefl.gov/",
+        "category": "Park"
+    },
+    "Morningside Nature Center": {
+        "address": "3540 E University Ave, Gainesville, FL 32641",
+        "lat": 29.6523,
+        "lon": -82.2742,
+        "website": "https://www.gainesvillefl.gov/",
+        "category": "Park"
+    },
+    "Tom Petty Park": {
+        "address": "501 NE 16th Ave, Gainesville, FL 32601",
+        "lat": 29.6663,
+        "lon": -82.3197,
+        "website": "https://www.gainesvillefl.gov/",
+        "category": "Park"
+    },
+    "Haile Village Center": {
+        "address": "9116 SW 51st Rd, Gainesville, FL 32608",
+        "lat": 29.6083,
+        "lon": -82.4411,
+        "website": "https://hailevillagecenter.com/",
+        "category": "Other"
+    },
+    "The Queens Arms Pub": {
+        "address": "5323 SW 91st Terrace, Gainesville, FL 32608",
+        "lat": 29.6067,
+        "lon": -82.4414,
+        "website": "https://thequeensarmspub.com/",
+        "category": "Brewery"
+    },
+    "Curia on the Drag": {
+        "address": "2029 NW 6th St, Gainesville, FL 32609",
+        "lat": 29.6714,
+        "lon": -82.3312,
+        "website": "https://curiaonthedrag.com/",
+        "category": "Other"
+    },
+    "The Lynx Books": {
+        "address": "601 S Main St, Gainesville, FL 32601",
+        "lat": 29.6457,
+        "lon": -82.3242,
+        "website": "https://thelynxbooks.com/",
+        "category": "Arts"
+    },
+    "Star Center Theatre": {
+        "address": "11 NE 23rd Ave, Gainesville, FL 32609",
+        "lat": 29.6732,
+        "lon": -82.3255,
+        "website": "https://starcentertheatre.org/",
+        "category": "Arts"
+    },
+    "Buchholz High School Auditorium": {
+        "address": "5510 NW 27th Ave, Gainesville, FL 32606",
+        "lat": 29.6775,
+        "lon": -82.4011,
+        "website": "https://www.sbac.edu/buchholz",
+        "category": "Arts"
+    },
+    "Daft Cow Brewery": {
+        "address": "13800 Tech City Circle, Alachua, FL 32615",
+        "lat": 29.7719,
+        "lon": -82.4764,
+        "website": "https://daftcowbrewery.com/",
+        "category": "Brewery"
+    },
+    "Alachua County Farmers Market": {
+        "address": "13900 Tech City Circle, Alachua, FL 32615",
+        "lat": 29.7719,
+        "lon": -82.4764,
+        "website": "https://441market.com/",
+        "category": "Other"
+    },
+    "Archer Depot": {
+        "address": "16994 SW 134th Ave, Archer, FL 32618",
+        "lat": 29.5312,
+        "lon": -82.5181,
+        "website": "https://cityofarcherfl.myrec.com/",
+        "category": "Other"
+    },
+    "Downtown High Springs": {
+        "address": "18587 High Springs Main St, High Springs, FL 32643",
+        "lat": 29.8271,
+        "lon": -82.5962,
+        "website": "https://highsprings.gov/",
+        "category": "Other"
+    },
+    "High Springs Historical Society Museum": {
+        "address": "23760 NW 187th Ave, High Springs, FL 32643",
+        "lat": 29.8273,
+        "lon": -82.5976,
+        "website": "https://highspringshistory.org/",
+        "category": "Museum"
+    },
+    "Marjorie Kinnan Rawlings Historic State Park": {
+        "address": "18700 South CR 325, Hawthorne, FL 32640",
+        "lat": 29.4839,
+        "lon": -82.1601,
+        "website": "https://www.floridastateparks.org/parks-and-trails/marjorie-kinnan-rawlings-historic-state-park",
+        "category": "Park"
+    },
+    "Carson Springs Wildlife Conservation Foundation": {
+        "address": "8528 E County Road 225, Gainesville, FL 32609",
+        "lat": 29.7341,
+        "lon": -82.2032,
+        "website": "https://carsonspringswildlife.org/",
+        "category": "Park"
+    },
+    "River Rise Preserve State Park": {
+        "address": "373 SW US Hwy 27, High Springs, FL 32643",
+        "lat": 29.8331,
+        "lon": -82.6074,
+        "website": "https://www.floridastateparks.org/parks-and-trails/river-rise-preserve-state-park",
+        "category": "Park"
+    },
+    "Waldo Farmers and Flea Market": {
+        "address": "17805 US-301, Waldo, FL 32694",
+        "lat": 29.7779,
+        "lon": -82.1802,
+        "website": "https://waldofleamarket.com/",
+        "category": "Other"
+    },
+    "Bragging Rights": {
+        "address": "113 NW 8th Ave, Gainesville, FL 32601",
+        "lat": 29.6588,
+        "lon": -82.3262,
+        "website": "https://braggingrightsgainesville.com/",
+        "category": "Other"
+    },
+    "Black C Art Gallery": {
+        "address": "201 SE 2nd Pl #111, Gainesville, FL 32601",
+        "lat": 29.6509,
+        "lon": -82.3242,
+        "website": "https://blackc.org/",
+        "category": "Arts"
+    },
+    "Gainesville Fine Arts Association": {
+        "address": "1314 S Main St, Gainesville, FL 32601",
+        "lat": 29.6378,
+        "lon": -82.3247,
+        "website": "https://www.gainsevillefinearts.org/",
+        "category": "Arts"
+    },
+    "Vivid Music Hall": {
+        "address": "201 W University Ave, Gainesville, FL 32601",
+        "lat": 29.6515,
+        "lon": -82.3268,
+        "website": "https://vividmusichall.com/",
+        "category": "Music"
+    },
+    "Boxcar Beer and Wine Garden": {
+        "address": "201 SE Depot Ave, Gainesville, FL 32601",
+        "lat": 29.6441,
+        "lon": -82.3235,
+        "website": "https://boxcarstation.com/",
+        "category": "Brewery"
+    },
+    "The Ox": {
+        "address": "920 NW 2nd St, Gainesville, FL 32601",
+        "lat": 29.6598,
+        "lon": -82.3276,
+        "website": "https://theoxgainesville.com/",
+        "category": "Music"
+    },
+    "Simons": {
+        "address": "8 S Main St, Gainesville, FL 32601",
+        "lat": 29.6514,
+        "lon": -82.3248,
+        "website": "https://simonsnightclub.com/",
+        "category": "Music"
+    },
+    "Pugh Hall": {
+        "address": "241 Pugh Hall, Gainesville, FL 32611",
+        "lat": 29.6489,
+        "lon": -82.3444,
+        "website": "https://bobgrahamcenter.ufl.edu/",
+        "category": "University"
+    },
+    "Ripple Theatricals": {
+        "address": "5505 SW 63rd Blvd, Gainesville, FL 32608",
+        "lat": 29.6052,
+        "lon": -82.4085,
+        "website": "https://rippletheatricals.com/",
+        "category": "Arts"
+    },
+    "Peanut Patch and CornMaze": {
+        "address": "8656 SW 75th St, Gainesville, FL 32608",
+        "lat": 29.5843,
+        "lon": -82.4241,
+        "website": "https://peanutpatchandcornmaze.com/",
+        "category": "Other"
+    },
+    "Grow HUB": {
+        "address": "2900 NE 8th Ave, Gainesville, FL 32641",
+        "lat": 29.6588,
+        "lon": -82.2867,
+        "website": "https://grow-hub.org/",
+        "category": "Park"
+    },
+    "Humane Society of North Central Florida": {
+        "address": "4205 NW 6th St, Gainesville, FL 32609",
+        "lat": 29.6924,
+        "lon": -82.3315,
+        "website": "https://www.humanesocietyncfl.org/",
+        "category": "Other"
+    },
+    "D1 Training Gainesville": {
+        "address": "426 SW 140th Terrace, Newberry, FL 32669",
+        "lat": 29.6502,
+        "lon": -82.4938,
+        "website": "https://www.d1training.com/gainesville/",
+        "category": "Sports"
+    },
+    "Condron Family Ballpark": {
+        "address": "2800 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6366,
+        "lon": -82.3685,
+        "website": "https://floridagators.com/",
+        "category": "Sports"
+    },
+    "Alfred A. Ring Tennis Complex": {
+        "address": "2805 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6382,
+        "lon": -82.3678,
+        "website": "https://floridagators.com/",
+        "category": "Sports"
+    },
+    "Mark Bostick Golf Course": {
+        "address": "2800 SW 2nd Ave, Gainesville, FL 32607",
+        "lat": 29.6469,
+        "lon": -82.3648,
+        "website": "https://floridagators.com/",
+        "category": "Sports"
+    },
+    "James G. Pressly Stadium": {
+        "address": "325 Stadium Rd, Gainesville, FL 32611",
+        "lat": 29.6472,
+        "lon": -82.3552,
+        "website": "https://floridagators.com/",
+        "category": "Sports"
+    },
+    "Katie Seashole Pressly Stadium": {
+        "address": "2880 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6361,
+        "lon": -82.3705,
+        "website": "https://floridagators.com/",
+        "category": "Sports"
     }
 }
 
@@ -574,7 +903,7 @@ def load_real_events(today_str):
         event_address = "Gainesville, FL"
 
         matched_venue_key = None
-        for key in PHYSICAL_VENUES.keys():
+        for key in sorted(PHYSICAL_VENUES.keys(), key=lambda k: len(k), reverse=True):
             if key.lower() in location.lower() or location.lower() in key.lower():
                 matched_venue_key = key
                 break
