@@ -765,6 +765,230 @@ PHYSICAL_VENUES = {
         "lon": -82.3705,
         "website": "https://floridagators.com/",
         "category": "Sports"
+    },
+    "Abiding Savior Lutheran Church": {
+        "address": "9700 W Newberry Rd, Gainesville, FL 32606",
+        "lat": 29.6525,
+        "lon": -82.4497,
+        "website": "https://abidingsavior.info/",
+        "category": "Other"
+    },
+    "Alachua Main Street": {
+        "address": "Main Street, Alachua, FL 32615",
+        "lat": 29.7936,
+        "lon": -82.4947,
+        "website": "https://www.cityofalachua.com/",
+        "category": "Other"
+    },
+    "Art Collective": {
+        "address": "6419 W Newberry Dr, Gainesville, FL 32605",
+        "lat": 29.6534,
+        "lon": -82.4116,
+        "website": "https://www.artbylale.com/",
+        "category": "Arts"
+    },
+    "Bazaar47": {
+        "address": "60 SW 2nd St, Gainesville, FL 32601",
+        "lat": 29.6508,
+        "lon": -82.3271,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Other"
+    },
+    "Bingo Deli": {
+        "address": "619 S Main St, Gainesville, FL 32601",
+        "lat": 29.6450,
+        "lon": -82.3240,
+        "website": "https://bingodeli.com/",
+        "category": "Other"
+    },
+    "Florida Acupuncture and Counseling": {
+        "address": "2610 NW 43rd St, Gainesville, FL 32606",
+        "lat": 29.6766,
+        "lon": -82.3887,
+        "website": "https://floridaacupunctureandcounseling.com/",
+        "category": "Other"
+    },
+    "Geeks": {
+        "address": "2603 NE 17th Ter, Gainesville, FL 32609",
+        "lat": 29.6675,
+        "lon": -82.3045,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Other"
+    },
+    "Grove Street District Market": {
+        "address": "220 NW 8th Ave, Gainesville, FL 32601",
+        "lat": 29.6587,
+        "lon": -82.3275,
+        "website": "https://grovestreetmarket.com/",
+        "category": "Other"
+    },
+    "High Springs Civic Center": {
+        "address": "19107 NW 240th St, High Springs, FL 32643",
+        "lat": 29.8291,
+        "lon": -82.5979,
+        "website": "https://highsprings.gov/",
+        "category": "Other"
+    },
+    "High Springs Farmers Market": {
+        "address": "23517 NW 185th Rd, High Springs, FL 32643",
+        "lat": 29.8268,
+        "lon": -82.5932,
+        "website": "https://highsprings.gov/",
+        "category": "Other"
+    },
+    "High Springs New Century Woman's Club": {
+        "address": "23674 US-27, High Springs, FL 32643",
+        "lat": 29.8272,
+        "lon": -82.5985,
+        "website": "https://highsprings.gov/",
+        "category": "Other"
+    },
+    "High Springs Women's Club": {
+        "address": "23674 W US Hwy 27, High Springs, FL 32643",
+        "lat": 29.8272,
+        "lon": -82.5985,
+        "website": "https://highsprings.gov/",
+        "category": "Other"
+    },
+    "Hilton UF Conference Center": {
+        "address": "1714 SW 34th St, Gainesville, FL 32607",
+        "lat": 29.6375,
+        "lon": -82.3727,
+        "website": "https://www.hilton.com/",
+        "category": "Other"
+    },
+    "Las Carretas Mexican Restaurant": {
+        "address": "3501 SW 2nd Ave, Gainesville, FL 32607",
+        "lat": 29.6508,
+        "lon": -82.3745,
+        "website": "https://lascarretasfl.com/",
+        "category": "Other"
+    },
+    "Limelight": {
+        "address": "4908 NW 34th St Ste 12, Gainesville, FL 32605",
+        "lat": 29.6989,
+        "lon": -82.3725,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Arts"
+    },
+    "Meizon Church": {
+        "address": "3411 NW 83rd St, Gainesville, FL 32606",
+        "lat": 29.6841,
+        "lon": -82.4390,
+        "website": "https://meizonchurch.com/",
+        "category": "Other"
+    },
+    "Nightjar Gallery": {
+        "address": "1628 NW 6th St, Gainesville, FL 32609",
+        "lat": 29.6672,
+        "lon": -82.3312,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Arts"
+    },
+    "Raise Your Glass Wine Bar": {
+        "address": "7415 NW 4th Blvd #30, Gainesville, FL 32607",
+        "lat": 29.6565,
+        "lon": -82.4231,
+        "website": "https://raiseyourglassgvl.com/",
+        "category": "Brewery"
+    },
+    "The Sacred Earth Center": {
+        "address": "7731 W Newberry Rd Ste A2, Gainesville, FL 32606",
+        "lat": 29.6531,
+        "lon": -82.4278,
+        "website": "https://sacredearthcenter.com/",
+        "category": "Other"
+    },
+    "The Summit Baptist Church": {
+        "address": "18915 NW US HWY 441, High Springs, FL 32643",
+        "lat": 29.8035,
+        "lon": -82.5621,
+        "website": "https://thesummitbaptist.com/",
+        "category": "Other"
+    },
+    "Tuscawilla Preserve": {
+        "address": "406 SE Tuscawilla Rd, Micanopy, FL 32667",
+        "lat": 29.5028,
+        "lon": -82.2755,
+        "website": "https://www.alachuaconservationtrust.org/",
+        "category": "Park"
+    },
+    "UF Innovate | Sid Martin Biotech": {
+        "address": "12085 Research Dr, Alachua, FL 32615",
+        "lat": 29.7712,
+        "lon": -82.4789,
+        "website": "https://innovate.research.ufl.edu/",
+        "category": "University"
+    },
+    "UF Innovate | The Hub": {
+        "address": "747 SW 2nd Ave, Gainesville, FL 32601",
+        "lat": 29.6496,
+        "lon": -82.3341,
+        "website": "https://innovate.research.ufl.edu/",
+        "category": "University"
+    },
+    "University Club": {
+        "address": "18 E University Ave, Gainesville, FL 32601",
+        "lat": 29.6519,
+        "lon": -82.3245,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Music"
+    },
+    "Wild Path Institute": {
+        "address": "1215 NW 14th Ave, Gainesville, FL 32601",
+        "lat": 29.6644,
+        "lon": -82.3375,
+        "website": "https://wildpathinstitute.org/",
+        "category": "Other"
+    },
+    "Orange Creek Restoration Area": {
+        "address": "5273-5305 E Hwy 318, Citra, FL 32113",
+        "lat": 29.4795,
+        "lon": -82.1645,
+        "website": "https://www.sjrwmd.com/lands/recreation/orange-creek/",
+        "category": "Park"
+    },
+    "1126 NW 7th Avenue": {
+        "address": "1126 NW 7th Ave, Gainesville, FL 32601",
+        "lat": 29.6578,
+        "lon": -82.3365,
+        "website": "https://gainesvilleevents.com/",
+        "category": "Music"
+    },
+    "Springhill Commons Publix": {
+        "address": "9200 NW 39th Ave, Gainesville, FL 32606",
+        "lat": 29.6888,
+        "lon": -82.4418,
+        "website": "https://www.aclib.us/bookmobile",
+        "category": "Library"
+    },
+    "Senior Recreation Center": {
+        "address": "5701 NW 34th Blvd, Gainesville, FL 32653",
+        "lat": 29.7078,
+        "lon": -82.3735,
+        "website": "https://www.aclib.us/bookmobile",
+        "category": "Library"
+    },
+    "Corner General Store": {
+        "address": "21915 SE US Hwy 301, Island Grove, FL 32654",
+        "lat": 29.4539,
+        "lon": -82.1065,
+        "website": "https://www.aclib.us/bookmobile",
+        "category": "Library"
+    },
+    "LaCrosse": {
+        "address": "State Road 121, LaCrosse, FL 32658",
+        "lat": 29.8378,
+        "lon": -82.3878,
+        "website": "https://www.aclib.us/bookmobile",
+        "category": "Library"
+    },
+    "Natural Area Park": {
+        "address": "3215 Hull Rd, Gainesville, FL 32611",
+        "lat": 29.6381,
+        "lon": -82.3692,
+        "website": "https://www.floridamuseum.ufl.edu/",
+        "category": "Park"
     }
 }
 
@@ -903,8 +1127,10 @@ def load_real_events(today_str):
         event_address = "Gainesville, FL"
 
         matched_venue_key = None
+        # Check both location and summary for physical venue matching (e.g. Bookmobile stops like "Springhill Commons Publix")
+        search_target = f"{location} {summary}".strip()
         for key in sorted(PHYSICAL_VENUES.keys(), key=lambda k: len(k), reverse=True):
-            if key.lower() in location.lower() or location.lower() in key.lower():
+            if key.lower() in search_target.lower() or search_target.lower() in key.lower():
                 matched_venue_key = key
                 break
 
@@ -984,6 +1210,30 @@ def load_real_events(today_str):
                 matched_venue_key = "Signal"
             elif "rosa b." in loc_lower:
                 matched_venue_key = "Rosa B. Williams Center"
+            elif "sweetwater wetlands" in loc_lower or "325 se williston" in loc_lower:
+                matched_venue_key = "Sweetwater Wetlands Park"
+            elif "upstage" in loc_lower or "phillips center" in loc_lower:
+                matched_venue_key = "UF Performing Arts"
+            elif "sasser fine arts" in loc_lower:
+                matched_venue_key = "Santa Fe College"
+            elif "hilton" in loc_lower:
+                matched_venue_key = "Hilton UF Conference Center"
+            elif "high springs farmer" in loc_lower:
+                matched_venue_key = "High Springs Farmers Market"
+            elif "high springs new century" in loc_lower or "high springs woman" in loc_lower or "high springs women" in loc_lower:
+                matched_venue_key = "High Springs Women's Club"
+            elif "albert" in loc_lower and "massey" in loc_lower:
+                matched_venue_key = "Albert Ray Massey Park"
+            elif "main street alachua" in loc_lower or "bob hitchcock" in loc_lower:
+                matched_venue_key = "Alachua Main Street"
+            elif "lynx" in loc_lower:
+                matched_venue_key = "The Lynx Books"
+            elif "orange creek" in loc_lower or "hwy 318" in loc_lower:
+                matched_venue_key = "Orange Creek Restoration Area"
+            elif "1126 nw 7th" in loc_lower:
+                matched_venue_key = "1126 NW 7th Avenue"
+            elif "lettuce club" in loc_lower or "reitz union" in loc_lower:
+                matched_venue_key = "Reitz Union Lawn"
 
         if matched_venue_key:
             v_info = PHYSICAL_VENUES[matched_venue_key]
