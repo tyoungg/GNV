@@ -735,7 +735,8 @@ selected_categories = st.sidebar.multiselect(
 # 3. Time Slider
 time_filter = st.sidebar.select_slider(
     "📅 Event Time Horizon",
-    options=["All", "Next 7 Days", "This Weekend", "Today"]
+    options=["All", "Next 7 Days", "This Weekend", "Today"],
+    value="Next 7 Days"
 )
 
 # 4. Map View Toggle
